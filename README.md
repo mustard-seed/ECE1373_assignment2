@@ -36,7 +36,8 @@ The Hypervisor contains the following:
 - An off-chip memory controller interfacing with 8GB of off-chip memory (first 2 GB is shared with PCIe addressable space)
 - Partial region to be programmed with partial reconfiguration, contains an AXI-Lite Slave interface to receive control information from PCIe and contains an AXI-Master interface connecting to the off-chip memory controller.
 
-**NOTE: WE HAVE CREATED THE HYPERVISOR FOR YOU AND IT CAN BE FOUND IN http://www.eecg.toronto.edu/~tarafda1/hypervisors/adm-8v3/static_routed_v1.dcp** 
+**NOTE: WE HAVE CREATED THE HYPERVISOR FOR YOU AND IT CAN BE FOUND IN http://www.eecg.toronto.edu/~tarafda1/hypervisors/adm-8v3/static_routed_v1.dcp.**
+**You do not need to download it. The Makefile handles the importing of the hypervisor and building of the application for you** 
 
 Do not create a new hypervisor as you will be sharing this FPGA with your colleagues who will be building with the same hypervisor
 The Makefile is modified to pull the DCP as needed. 
