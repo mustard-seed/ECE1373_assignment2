@@ -12,7 +12,7 @@ The source code is organized as follows:
 - conv directory has files for the convolution layer
 - nn_params stores binaries for the weights, biases, inputs and reference output. This also contains a script extractParams to create new binaries for other layers. 
 - util directory has the shared function to read input.
-- vivado_hls_proj contains tcl scripts to create a vivado_hls project for convolution and fc.
+- hls_proj contains tcl scripts to create a vivado_hls project for convolution and fc.
 - pci_tests includes tests to read and write to pcie.
 - 8v3_shell contains files and projects for the hypervisor and user appplications
 
