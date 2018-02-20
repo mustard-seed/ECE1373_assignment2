@@ -20,8 +20,8 @@ hw_fc_layer: fc_test/* util/*
 conv_hls: conv_test/* util/* 
 	vivado_hls hls_proj/conv_hls.tcl
 
-fc_hls: conv_test/*  util/*
-	vivado_hls hls_proj/conv_hls.tcl
+fc_hls: fc_test/*  util/*
+	vivado_hls hls_proj/fc_hls.tcl
 
 pr:     $(PR_SRCS) dcp conv_hls fc_hls 
 	vivado -mode tcl -source 8v3_shell/create_pr2_nn.tcl -tclargs $(DCP) 
