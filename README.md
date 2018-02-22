@@ -65,6 +65,11 @@ We have verified functionality on both the conv and fc layer.
 - This will create the vivado_hls projects in hls_proj,  and create a new application in a partial region using the hypervisor provided.
            
 
+You will then need to program the FPGA. To program the FPGA run the following:
+``/opt/util/prog_util/program.sh 8v3_shell/pr_region_test_proj_pblock_pr_region_partial.bit 8v3_shell/pr_region_test_proj_pblock_pr_region_partial_clear.bit``
+
+Where the first argument is the partial bitstream and the second argument is the clear bitstream. 
+
 You can look at the generated slave_axi registers to see which offsets you need to program the control registers.
 For example for the fc look at ./hls_proj/fc_proj/solution1/impl/verilog/fc_layer_CTRL_BUS_s_axi.v
 
