@@ -36,13 +36,23 @@ void hw_conv_layer(int target,             // control address in the system
                    const int k)            // kernel size
 {
   volatile void* map_base;
+  const char * pPath = getenv("XDMA");
 
-  const char * ctrl_device = "/dev/xdma0_user";
-  const char * dma_to_device = "/dev/xdma0_h2c_0";
-  const char * dma_from_device = "/dev/xdma0_c2h_0";
+  const char * ctrl_device_0 = "/dev/xdma0_user";
+  const char * dma_to_device_0 = "/dev/xdma0_h2c_0";
+  const char * dma_from_device_0 = "/dev/xdma0_c2h_0";
+  
+  const char * ctrl_device_1 = "/dev/xdma1_user";
+  const char * dma_to_device_1 = "/dev/xdma1_h2c_0";
+  const char * dma_from_device_1 = "/dev/xdma1_c2h_0";
+  
 
   // Setup control registers
-  int ctrl_fd =  open(ctrl_device, O_RDWR | O_SYNC);
+  int ctrl_fd;
+  if(strcmp(pPath, "/dev/xdma0") == 0)
+    ctrl_fd =  open((const char *)ctrl_device_0, O_RDWR | O_SYNC);
+  else
+    ctrl_fd =  open((const char *)ctrl_device_1, O_RDWR | O_SYNC);
   map_base = mmap(0, MAP_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, ctrl_fd, 0);
   printf("Memory mapped at address %p.\n", map_base); 
 
@@ -72,7 +82,12 @@ void hw_conv_layer(int target,             // control address in the system
   printf("Copied input to buffer\n");
 
   // DMA input values
-  int dma_to_device_fd = open(dma_to_device, O_RDWR | O_NONBLOCK);
+  int dma_to_device_fd;
+  if(strcmp(pPath, "/dev/xdma0") == 0)
+    dma_to_device_fd = open((const char *)dma_to_device_0, O_RDWR | O_NONBLOCK);
+  else
+     dma_to_device_fd = open((const char *)dma_to_device_1, O_RDWR | O_NONBLOCK);
+
   uint32_t addr = input_offset;
   lseek(dma_to_device_fd, addr, SEEK_SET);
   write(dma_to_device_fd, (char*)in_buffer, size*sizeof(float));
@@ -95,7 +110,11 @@ void hw_conv_layer(int target,             // control address in the system
 
   // DMA outputs back
   char *out_buffer = NULL;
-  int dma_from_device_fd  = open(dma_from_device, O_RDWR | O_NONBLOCK);
+  int dma_from_device_fd;
+  if(strcmp(pPath, "/dev/xdma0") == 0)
+    dma_from_device_fd  = open((const char *)dma_from_device_0, O_RDWR | O_NONBLOCK);
+  else
+    dma_from_device_fd  = open((const char *)dma_from_device_1, O_RDWR | O_NONBLOCK);
   int out_size = od*oy*ox*b;
 
   posix_memalign((void **)&allocated, 4096/*alignment*/, out_size*sizeof(float) + 4096);
