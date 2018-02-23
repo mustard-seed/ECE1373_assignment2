@@ -50,6 +50,6 @@ clean_dcp:
 
 
 dcp: 
-	ls 8v3_shell/$(DCP) 2> /dev/null &&  echo "File exists" || (wget http://www.eecg.toronto.edu/~tarafda1/hypervisors/adm-8v3/${DCP} && mv ${DCP} 8v3_shell/static_routed.dcp) 
+	ls 8v3_shell/$(DCP) 2> /dev/null &&  echo "File exists" || (wget http://www.eecg.toronto.edu/~tarafda1/hypervisors/adm-8v3/${DCP} && mv ${DCP} 8v3_shell/) 
        
 
