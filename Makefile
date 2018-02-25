@@ -40,7 +40,7 @@ clean_sw:
 	rm -rf fc_layer hw_fc_layer conv_layer hw_conv_layer
 
 clean_pr:
-	rm -rf 8v3_shell/pr_region_test 
+	rm -rf 8v3_shell/pr_region_test_proj 
 
 clean_static:
 	rm -rf 8v3_shell/mig_shell_ila_proj
