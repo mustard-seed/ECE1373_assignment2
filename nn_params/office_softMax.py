@@ -39,8 +39,8 @@ correct_top1=0
 correct_top5=0
 
 
-model  = '/opt/caffe/models/vgg16/VGG_ILSVRC_16_layers_deploy_update.prototxt'
-weights  = '/opt/caffe/models/vgg16/VGG_ILSVRC_16_layers_update.caffemodel'
+model  = '/home/jamesliu/ECE1373/ECE1373_assignment2/office_data/VGG_ILSVRC_16_layers_deploy_update.prototxt'
+weights  = '/home/jamesliu/ECE1373/ECE1373_assignment2/office_data/vgg16/VGG_ILSVRC_16_layers_update.caffemodel'
 image_root_path = 'data/vgg_batches' 
 total_batches=10
 last_fc = 'fc8'
