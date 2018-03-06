@@ -91,5 +91,5 @@ for i in range(0, total_batches):
 correct_top1_pct = 100.0 * float(correct_top1)/float(total_batches * batch_size)
 correct_top5_pct = 100.0 * float(correct_top5)/float(total_batches * batch_size)
 
-print "Top 1 percent correct " + str(correct_top1_pct)
-print "Top 5 percent correct " + str(correct_top5_pct)
+print ("Top 1 percent correct " + str(correct_top1_pct))
+print ("Top 5 percent correct " + str(correct_top5_pct))
