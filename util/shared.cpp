@@ -179,7 +179,7 @@ vector<map<string, int> > readBatchParams(string imageRootDir, int numBatches, s
    return retVec;
 }
 
-int readInputBatches(string imageRootDir, vector<map<string, int> > batch_layer_params, int numBatches, string layer, const int max_alloc, vector<float *> &ptr, bool conv){
+int readInputBatches(string imageRootDir, vector<map<string, int> > batch_layer_params, int numBatches, string layer, const int max_alloc, vector<float *> &ptr, int layerType){
   float * dma_input;
   ostringstream ss;
   
@@ -192,19 +192,23 @@ int readInputBatches(string imageRootDir, vector<map<string, int> > batch_layer_
         ss.str("");
     	ss << i;
 	int size;
-        if(conv){
+        if(layerType == CONV){
   		size = batch_layer_params[i]["input_dim"]*batch_layer_params[i]["output_dim"]*
                   batch_layer_params[i]["kernel_size"]*batch_layer_params[i]["kernel_size"]+
                   batch_layer_params[i]["output_dim"]+
                   batch_layer_params[i]["input_dim"]*batch_layer_params[i]["input_width"]*
                   batch_layer_params[i]["input_height"]*batch_layer_params[i]["batch_size"];
         }
-	else{
+	else if(layerType == FC){
   		size = batch_layer_params[i]["input_dim"]*batch_layer_params[i]["output_dim"]+
 	               batch_layer_params[i]["output_dim"] +
 	               batch_layer_params[i]["batch_size"]*batch_layer_params[i]["input_dim"];
 
         }
+    else{ 
+        size = batch_layer_params[i]["input_dim"]*batch_layer_params[i]["input_width"]*
+                  batch_layer_params[i]["input_height"]*batch_layer_params[i]["batch_size"];
+    }
   	string imageDir = imageRootDir + ss.str() + "/" + layer;
   	if (readRawFile(imageDir + "/dma_in",
                   dma_input,
@@ -218,7 +222,7 @@ int readInputBatches(string imageRootDir, vector<map<string, int> > batch_layer_
 
 }
 
-int readOutputBatches(string imageRootDir, vector<map<string, int> > batch_layer_params, int numBatches, string layer, const int max_alloc, vector <float *> &ptr, bool conv){
+int readOutputBatches(string imageRootDir, vector<map<string, int> > batch_layer_params, int numBatches, string layer, const int max_alloc, vector <float *> &ptr, int layerType){
   float * gold_outputs;
   ostringstream ss;
   
@@ -232,7 +236,7 @@ int readOutputBatches(string imageRootDir, vector<map<string, int> > batch_layer
         ss.str("");
     	ss << i;
   	string imageDir = imageRootDir + ss.str() + "/" + layer;
-        if(conv){
+        if(layerType == CONV || layerType == POOL ){
   	  size =      batch_layer_params[i]["output_dim"]*batch_layer_params[i]["output_width"]*
                   batch_layer_params[i]["output_height"]*batch_layer_params[i]["batch_size"];
         }
@@ -254,7 +258,7 @@ int readOutputBatches(string imageRootDir, vector<map<string, int> > batch_layer
 
 }
 
-float get_mean_squared_error_and_write_file(vector<float *> mem, vector <float *> golden_output, int numBatches, vector<map<string,int> >batch_layer_params, string imageRootDir, string layer, bool conv){
+float get_mean_squared_error_and_write_file(vector<float *> mem, vector <float *> golden_output, int numBatches, vector<map<string,int> >batch_layer_params, string imageRootDir, string layer, int layerType){
   
 
   float total = 0.0f;
@@ -271,7 +275,7 @@ float get_mean_squared_error_and_write_file(vector<float *> mem, vector <float *
     int num_weights;
     int num_outputs;
     float * outputs;
-    if(conv){
+    if(layerType == CONV){
     	num_inputs = batch_layer_params[i]["input_dim"]*batch_layer_params[i]["input_width"]*
     		   batch_layer_params[i]["input_height"];
     	num_biases = batch_layer_params[i]["output_dim"];
@@ -280,13 +284,21 @@ float get_mean_squared_error_and_write_file(vector<float *> mem, vector <float *
     	totalNumOutputs += b*num_outputs;
     	outputs = mem[i] + b*num_inputs+num_biases+num_weights;
     }
-    else{
+    else if(layerType == FC){
     	num_inputs = batch_layer_params[i]["input_dim"];
     	num_biases = batch_layer_params[i]["output_dim"];
     	num_weights = batch_layer_params[i]["input_dim"]*batch_layer_params[i]["output_dim"];
     	num_outputs = batch_layer_params[i]["output_dim"];
     	totalNumOutputs += b*num_outputs;
     	outputs = mem[i] + b*num_inputs+num_biases+num_weights;
+
+    }
+    else { //POOL
+    	num_inputs = batch_layer_params[i]["input_dim"]*batch_layer_params[i]["input_width"]*
+    		   batch_layer_params[i]["input_height"];
+    	num_outputs = batch_layer_params[i]["output_dim"]*batch_layer_params[i]["output_width"]*batch_layer_params[i]["output_height"];
+    	totalNumOutputs += b*num_outputs;
+    	outputs = mem[i] + b*num_inputs;
 
     }
     for (int j = 0; j < b*num_outputs; j++)
