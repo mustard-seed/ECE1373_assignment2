@@ -72,9 +72,9 @@ int main()
   vector<map<string, int> > batch_layer_params = readBatchParams(imageRootDir, numBatches, layer);
   vector<float *> dma_input_vec;
   vector<float *> gold_outputs_vec;
-  if(readInputBatches(imageRootDir, batch_layer_params, numBatches, layer, MAX_WEIGHT_SIZE+MAX_OUTPUT_SIZE+MAX_BATCH*MAX_INPUT_SIZE+MAX_BATCH*MAX_OUTPUT_SIZE, dma_input_vec, false))
+  if(readInputBatches(imageRootDir, batch_layer_params, numBatches, layer, MAX_WEIGHT_SIZE+MAX_OUTPUT_SIZE+MAX_BATCH*MAX_INPUT_SIZE+MAX_BATCH*MAX_OUTPUT_SIZE, dma_input_vec, FC))
 	return 1;
-  if(readOutputBatches(imageRootDir, batch_layer_params, numBatches, layer, MAX_BATCH*MAX_OUTPUT_SIZE, gold_outputs_vec, false)) return 1;
+  if(readOutputBatches(imageRootDir, batch_layer_params, numBatches, layer, MAX_BATCH*MAX_OUTPUT_SIZE, gold_outputs_vec, FC)) return 1;
 
   auto start = chrono::system_clock::now(); 
   for(int i=0; i<numBatches; i++){
@@ -93,7 +93,7 @@ int main()
   auto end = chrono::system_clock::now(); 
   auto elapsed = end - start;
 
-  float avg_error = get_mean_squared_error_and_write_file(dma_input_vec, gold_outputs_vec, numBatches, batch_layer_params, imageRootDir, layer, false);
+  float avg_error = get_mean_squared_error_and_write_file(dma_input_vec, gold_outputs_vec, numBatches, batch_layer_params, imageRootDir, layer, FC);
   
   cout << "Mean Square Error " << avg_error << endl;
   cout << "Computation took  " << chrono::duration_cast<chrono::milliseconds> (elapsed).count() << " ms" << endl;
