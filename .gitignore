@@ -4,6 +4,7 @@
 .Xil
 vivado_*
 *dcp
+!8v3_shell/static_routed_v2.dcp
 *bit
 *_proj
 usage_statistics_webtalk.html
@@ -12,3 +13,4 @@ hd_visual
 *timing
 office_data/
 data/
+*test_pr/
