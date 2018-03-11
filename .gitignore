@@ -17,3 +17,4 @@ data/
 
 #CMakeLists
 *.user
+build-vgg_16-Desktop-Debug/
