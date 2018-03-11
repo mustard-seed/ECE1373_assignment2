@@ -14,3 +14,6 @@ hd_visual
 office_data/
 data/
 *test_pr/
+
+#CMakeLists
+*.user
