@@ -1,0 +1,31 @@
+cmake_minimum_required(VERSION 3.1)
+
+project(vgg_16)
+set(IS_CMAKE_BUILD TRUE)
+include(config.cmake)
+include(functions.cmake)
+
+#option(VGG_BUILD_TESTS "Determines whether to build tests." ON)
+#if(ZEUS_BUILD_TESTS)
+#    enable_testing()
+#endif()
+
+##include_directories(common)
+##include_directories(${CMAKE_BINARY_DIR}/devel/include)
+#add_subdirectory(logger)
+#add_subdirectory(utils)
+#add_subdirectory(thirdparty)
+#add_subdirectory(vehicle_interface)
+##add_subdirectory(lane_detection)
+#add_subdirectory(path_tracking)
+#add_subdirectory(path_planner)
+#add_subdirectory(stop_sign_detection)
+#add_subdirectory(validator)
+#add_subdirectory(vi_ros)
+#add_executable(${PROJECT_NAME} "main.cpp")
+add_definitions(-DSW_ONLY=1)
+
+include_directories(common) #Contontains header files that define data type, tiling and parallelization parameters
+add_subdirectory(convLayer)
+#add_subdirectory(fcLayer)
+#add_subdirectory()
