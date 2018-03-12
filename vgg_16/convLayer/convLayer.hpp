@@ -1,7 +1,8 @@
 #ifndef CONVLAYER_HPP
 #define CONVLAYER_HPP
 #include "../common/types.hpp"
-void conv_layer(t_conv * mem,            // global memory pointer
+#include "../common/params.hpp"
+void convLayer(t_conv * mem,            // global memory pointer
                 int input_offset,       // offset of inputs
                 int output_offset,      // offset of outputs
                 const int b,            // batch size
@@ -14,4 +15,11 @@ void conv_layer(t_conv * mem,            // global memory pointer
                 const int s,            // stride
                 const int k);           // kernel size
 
+void convLayer_LoadBroadcastBuffer (const t_conv * memInput, //global memory pointer to where to start loading inputs.
+        t_conv bufferBroadcast[NUM_TILE_BROADCAST][NUM_DEPTH_BROADCAST], //Array of on-chip buffer storing inputs
+        const int inputDMax,           // input dimensions
+        const int inputWMax,           // input width
+        const int inputHMax,           // input height
+        const int inputDOffset     //Starting channel index
+        , const unsigned int pad);
 #endif // CONVLAYER_HPP

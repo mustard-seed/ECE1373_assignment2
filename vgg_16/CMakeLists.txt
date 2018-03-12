@@ -26,6 +26,7 @@ include(functions.cmake)
 add_definitions(-DSW_ONLY=1)
 
 include_directories(common) #Contontains header files that define data type, tiling and parallelization parameters
+add_subdirectory(utilities)
 add_subdirectory(convLayer)
 #add_subdirectory(fcLayer)
 #add_subdirectory()

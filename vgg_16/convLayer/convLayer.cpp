@@ -1,6 +1,7 @@
 #include "convLayer.hpp"
+#include <cstring>
 
-void conv_layer(t_conv * mem,            // global memory pointer
+void convLayer(t_conv * mem,            // global memory pointer
                 int input_offset,       // offset of inputs
                 int output_offset,      // offset of outputs
                 const int b,            // batch size
@@ -31,4 +32,71 @@ void conv_layer(t_conv * mem,            // global memory pointer
 #pragma HLS INTERFACE s_axilite port=return bundle=CTRL_BUS
 
 
+}
+
+void convLayer_LoadBroadcastBuffer (
+        const t_conv * memInput, //global memory pointer to where to start loading inputs.
+        t_conv bufferBroadcast[NUM_TILE_BROADCAST][NUM_DEPTH_BROADCAST], //Array of on-chip buffer storing inputs
+        const int inputDMax,           // input dimensions
+        const int inputWMax,           // input width
+        const int inputHMax,           // input height
+        const int inputDOffset,     //Starting channel index
+        const unsigned int pad      //Number of padding required
+        )
+{
+    //Number of t_conv values that can be supplied per DDR access
+    const unsigned int lengthInputPacket = PORT_WIDTH_BYTE / sizeof(t_conv);
+
+    //Actual limit in the dimension of channels
+    const int inputDMaxActual = inputDMax < inputDOffset + 0x1 << EXP_TILE_INPUT_CONV_Z ?
+                                                                      inputDmax :
+                                                                      inputDOffset + 0x1 << EXP_TILE_INPUT_CONV_Z;
+
+    //Counter for the number of data written to the on-chip buffer.
+    unsigned int iterMemInput = 0;
+
+    unsigned int offsetDepthInputDepth = 0;
+    unsigned int offsetDepthInputHeight = 0;
+    unsigned int offsetBankInputDepth = 0;
+    unsigned int offsetBankInputHeight = 0;
+
+
+    //Buffer to temporarily hold incoming data
+    //TODO: Apply HLS partition on this array
+    t_conv bufferDDR[PORT_WIDTH_BYTE / sizeof(t_conv)];
+
+    for (unsigned int iterD = inputDOffset, iterDMinor = 0;
+         iterD < inputDMaxActual;
+         iterD++, iterDMinor++)
+    {
+        for (unsigned int iterH = 0; iterH < inputHMax; iterH++)
+        {
+            for (unsigned int iterW = 0; iterW < inputWMax; iterW += lengthInputPacket)
+            {
+                if ()
+                //Read in multiple bytes from the DDR into the DDR buffer
+                memcpy((void *)&bufferDDR[0], (void *)memInput, PORT_WIDTH_BYTE);
+
+                //Write data from DDR to the on-chip memory
+                for (unsigned int iter=0; iter<lengthInputPacket; iter++)
+                {
+                    if (iterW + iter < inputMax)
+                    {
+                        bufferBroadcast[];
+                        iterMemInput++;
+                    }
+                }
+
+            }
+            offsetDepthInputHeight += (iterH >> EXP_TILE_INPUT_CONV_Y) *
+                    NUM_DEPTH_INPUT_CONV_X;
+            offsetBankInputHeight += (iterH & MASK_TILE_INPUT_CONV_Y)
+                    * ( (0x1) << (EXP_TILE_INPUT_CONV_X) );
+        }
+
+        offsetDepthInputDepth += (iterD >> EXP_TILE_INPUT_CONV_Z) *
+                NUM_DEPTH_INPUT_CONV_X * NUM_DEPTH_INPUT_CONV_Y;
+        offsetBankInputDepth += (iterD & MASK_TILE_INPUT_CONV_Z)
+                * ( (0x1) << (EXP_TILE_INPUT_CONV_X + EXP_TILE_INPUT_CONV_Y));
+    }
 }
