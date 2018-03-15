@@ -41,7 +41,7 @@ void convLayer_Forward(float * mem,            // global memory pointer
                 const unsigned int outputByteOffset,      // offset of outputs in BYTES
                 const unsigned int parametersByteOffset,  // offset of parameters in BYTES
                 t_conv (&bufferBroadcast)[NUM_TILE_BROADCAST][NUM_DEPTH_BROADCAST], //Array of on-chip buffer storing inputs
-                t_conv (&bufferOutput) [NUM_TILE_BROADCAST][NUM_DEPTH_BROADCAST], //Array of on-chip buffer storing partial sums
+                t_conv (&bufferOutput) [NUM_TILE_OUTPUT][NUM_DEPTH_OUTPUT], //Array of on-chip buffer storing partial sums
                 t_conv (&bufferWeights)[NUM_PARALLEL_K][NUM_PARALLEL_ONE_KERNEL], //weight buffer
                 const unsigned int batchSize,            // batch size
                 const unsigned int k,           // output number of kernels
@@ -79,7 +79,7 @@ void convLayer_LoadBroadcastBuffer (const float *memInput, //global memory point
 
 void convLayer_OffloadOutputBuffer (
         float * memOutput, //global memory pointer to the start of outputs
-        const t_conv (&bufferOutput) [NUM_TILE_BROADCAST][NUM_DEPTH_BROADCAST], //Array of on-chip buffer storing partial sums
+        const t_conv (&bufferOutput) [NUM_TILE_OUTPUT][NUM_DEPTH_OUTPUT], //Array of on-chip buffer storing partial sums
 
         const unsigned int outputKMax,   //Output number of filters
         const unsigned int outputMMax,  //Output height
@@ -121,7 +121,7 @@ void convLayer_WrapperLoadWeightsAndInputs(
         );
 void convLayer_PrepareOutputBuffer (
         const float * &memInput, //point to start loading biases
-        t_conv (&bufferWeights) [NUM_TILE_OUTPUT][NUM_DEPTH_BROADCAST], //Array of on-chip buffer storing partial sums
+        t_conv (&bufferOutput) [NUM_TILE_OUTPUT][NUM_DEPTH_BROADCAST], //Array of on-chip buffer storing partial sums
         const unsigned int outputKMax,   //Output number of filters
         const unsigned int outputMMax,  //Output height
         const unsigned int outputNMax, //output width
@@ -131,7 +131,7 @@ void convLayer_PrepareOutputBuffer (
 void convLayer_ComputePartialSum (
         const t_conv (&bufferBroadcast)[NUM_TILE_OUTPUT][NUM_DEPTH_BROADCAST], //Array of on-chip buffer storing inputs
         const t_conv (&bufferWeights)[NUM_PARALLEL_K][NUM_PARALLEL_ONE_KERNEL], //weight buffer
-        t_conv (&bufferOutput) [NUM_TILE_OUTPUT][NUM_DEPTH_BROADCAST], //Array of on-chip buffer storing partial sums
+        t_conv (&bufferOutput) [NUM_TILE_OUTPUT][NUM_DEPTH_OUTPUT], //Array of on-chip buffer storing partial sums
 
         const unsigned int outputMMax,  //Output height
         const unsigned int outputNMax, //output width

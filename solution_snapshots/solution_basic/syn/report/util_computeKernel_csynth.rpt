@@ -1,0 +1,189 @@
+
+
+================================================================
+== Vivado HLS Report for 'util_computeKernel'
+================================================================
+* Date:           Thu Mar 15 01:12:15 2018
+
+* Version:        2017.2 (Build 1909853 on Thu Jun 15 18:55:24 MDT 2017)
+* Project:        accelerator
+* Solution:       solution_basic
+* Product family: virtexu
+* Target device:  xcvu095-ffvc1517-2-e
+
+
+================================================================
+== Performance Estimates
+================================================================
++ Timing (ns): 
+    * Summary: 
+    +--------+-------+----------+------------+
+    |  Clock | Target| Estimated| Uncertainty|
+    +--------+-------+----------+------------+
+    |ap_clk  |   5.00|      3.98|        0.62|
+    +--------+-------+----------+------------+
+
++ Latency (clock cycles): 
+    * Summary: 
+    +------+------+------+------+---------+
+    |   Latency   |   Interval  | Pipeline|
+    |  min |  max |  min |  max |   Type  |
+    +------+------+------+------+---------+
+    |  2321|  2321|  2321|  2321|   none  |
+    +------+------+------+------+---------+
+
+    + Detail: 
+        * Instance: 
+        N/A
+
+        * Loop: 
+        +-------------+------+------+----------+-----------+-----------+------+----------+
+        |             |   Latency   | Iteration|  Initiation Interval  | Trip |          |
+        |  Loop Name  |  min |  max |  Latency |  achieved |   target  | Count| Pipelined|
+        +-------------+------+------+----------+-----------+-----------+------+----------+
+        |- Loop 1     |  2320|  2320|       290|          -|          -|     8|    no    |
+        | + Loop 1.1  |   288|   288|         4|          -|          -|    72|    no    |
+        +-------------+------+------+----------+-----------+-----------+------+----------+
+
+
+
+================================================================
+== Utilization Estimates
+================================================================
+* Summary: 
++-----------------+---------+-------+---------+--------+
+|       Name      | BRAM_18K| DSP48E|    FF   |   LUT  |
++-----------------+---------+-------+---------+--------+
+|DSP              |        -|      1|        -|       -|
+|Expression       |        -|      -|      273|     228|
+|FIFO             |        -|      -|        -|       -|
+|Instance         |        -|      -|        -|       -|
+|Memory           |        -|      -|        -|       -|
+|Multiplexer      |        -|      -|        -|      51|
+|Register         |        -|      -|      110|       -|
++-----------------+---------+-------+---------+--------+
+|Total            |        0|      1|      383|     279|
++-----------------+---------+-------+---------+--------+
+|Available        |     3456|    768|  1075200|  537600|
++-----------------+---------+-------+---------+--------+
+|Utilization (%)  |        0|   ~0  |    ~0   |   ~0   |
++-----------------+---------+-------+---------+--------+
+
++ Detail: 
+    * Instance: 
+    N/A
+
+    * DSP48: 
+    +-------------------------+----------------------+-----------+
+    |         Instance        |        Module        | Expression|
+    +-------------------------+----------------------+-----------+
+    |accelerator_mul_mbkb_U1  |accelerator_mul_mbkb  |  i0 * i1  |
+    +-------------------------+----------------------+-----------+
+
+    * Memory: 
+    N/A
+
+    * FIFO: 
+    N/A
+
+    * Expression: 
+    +--------------------------------+----------+-------+-----+----+------------+------------+
+    |          Variable Name         | Operation| DSP48E|  FF | LUT| Bitwidth P0| Bitwidth P1|
+    +--------------------------------+----------+-------+-----+----+------------+------------+
+    |iterDotProduct_1_fu_182_p2      |     +    |      0|   26|  13|           7|           1|
+    |iterOutput_1_fu_135_p2          |     +    |      0|   17|  10|           4|           1|
+    |p_Val2_2_fu_228_p2              |     +    |      0|  101|  38|          32|          32|
+    |p_Val2_4_fu_295_p2              |     +    |      0|   53|  22|          16|          16|
+    |tmp_12_fu_170_p2                |     +    |      0|   38|  17|          11|          11|
+    |tmp_13_fu_197_p2                |     +    |      0|   38|  17|          11|          11|
+    |brmerge40_demorgan_i_fu_425_p2  |    and   |      0|    0|   2|           1|           1|
+    |carry_fu_315_p2                 |    and   |      0|    0|   2|           1|           1|
+    |overflow_fu_419_p2              |    and   |      0|    0|   2|           1|           1|
+    |p_38_i_i_fu_395_p2              |    and   |      0|    0|   2|           1|           1|
+    |p_41_i_i_fu_381_p2              |    and   |      0|    0|   2|           1|           1|
+    |qb_assign_1_fu_285_p2           |    and   |      0|    0|   2|           1|           1|
+    |underflow_fu_443_p2             |    and   |      0|    0|   2|           1|           1|
+    |Range1_all_ones_fu_355_p2       |   icmp   |      0|    0|   4|           8|           2|
+    |Range1_all_zeros_fu_361_p2      |   icmp   |      0|    0|   4|           8|           1|
+    |Range2_all_ones_fu_339_p2       |   icmp   |      0|    0|   4|           7|           2|
+    |r_fu_258_p2                     |   icmp   |      0|    0|   4|           7|           1|
+    |tmp_2_fu_176_p2                 |   icmp   |      0|    0|   4|           7|           7|
+    |tmp_fu_129_p2                   |   icmp   |      0|    0|   2|           4|           5|
+    |brmerge_i_i_fu_407_p2           |    or    |      0|    0|   2|           1|           1|
+    |brmerge_i_i_i_fu_449_p2         |    or    |      0|    0|   2|           1|           1|
+    |r_i_i_i_fu_279_p2               |    or    |      0|    0|   2|           1|           1|
+    |tmp1_demorgan_fu_431_p2         |    or    |      0|    0|   2|           1|           1|
+    |tmp2_fu_455_p2                  |    or    |      0|    0|   2|           1|           1|
+    |underflow_not_fu_461_p2         |    or    |      0|    0|   2|           1|           1|
+    |deleted_ones_fu_387_p3          |  select  |      0|    0|   2|           1|           1|
+    |deleted_zeros_fu_367_p3         |  select  |      0|    0|   2|           1|           1|
+    |p_Val2_4_17_fu_475_p3           |  select  |      0|    0|  17|           1|          17|
+    |p_Val2_4_mux_fu_467_p3          |  select  |      0|    0|  16|           1|          15|
+    |partialOutputBuffer_s_d0        |  select  |      0|    0|  16|           1|          16|
+    |p_not_i_i_fu_401_p2             |    xor   |      0|    0|   2|           1|           2|
+    |tmp1_fu_437_p2                  |    xor   |      0|    0|   2|           1|           2|
+    |tmp_10_fu_413_p2                |    xor   |      0|    0|   2|           1|           2|
+    |tmp_5_fu_309_p2                 |    xor   |      0|    0|   2|           1|           2|
+    |tmp_9_fu_375_p2                 |    xor   |      0|    0|   2|           1|           2|
+    +--------------------------------+----------+-------+-----+----+------------+------------+
+    |Total                           |          |      0|  273| 228|         145|         163|
+    +--------------------------------+----------+-------+-----+----+------------+------------+
+
+    * Multiplexer: 
+    +------------------------+----+-----------+-----+-----------+
+    |          Name          | LUT| Input Size| Bits| Total Bits|
+    +------------------------+----+-----------+-----+-----------+
+    |ap_NS_fsm               |  33|          7|    1|          7|
+    |iterDotProduct_reg_118  |   9|          2|    7|         14|
+    |iterOutput_reg_107      |   9|          2|    4|          8|
+    +------------------------+----+-----------+-----+-----------+
+    |Total                   |  51|         11|   12|         29|
+    +------------------------+----+-----------+-----+-----------+
+
+    * Register: 
+    +-------------------------------+----+----+-----+-----------+
+    |              Name             | FF | LUT| Bits| Const Bits|
+    +-------------------------------+----+----+-----+-----------+
+    |ap_CS_fsm                      |   6|   0|    6|          0|
+    |computeCache_V_load_reg_535    |  16|   0|   16|          0|
+    |computeStream_V_load_reg_540   |  16|   0|   16|          0|
+    |iterDotProduct_1_reg_520       |   7|   0|    7|          0|
+    |iterDotProduct_reg_118         |   7|   0|    7|          0|
+    |iterOutput_1_reg_502           |   4|   0|    4|          0|
+    |iterOutput_reg_107             |   4|   0|    4|          0|
+    |p_Val2_1_reg_545               |  32|   0|   32|          0|
+    |partialOutputBuffer_1_reg_512  |   3|   0|    3|          0|
+    |tmp_12_reg_507                 |   8|   0|   11|          3|
+    |tmp_16_reg_551                 |   7|   0|    7|          0|
+    +-------------------------------+----+----+-----+-----------+
+    |Total                          | 110|   0|  113|          3|
+    +-------------------------------+----+----+-----+-----------+
+
+
+
+================================================================
+== Interface
+================================================================
+* Summary: 
++--------------------------------+-----+-----+------------+-----------------------+--------------+
+|            RTL Ports           | Dir | Bits|  Protocol  |     Source Object     |    C Type    |
++--------------------------------+-----+-----+------------+-----------------------+--------------+
+|ap_clk                          |  in |    1| ap_ctrl_hs |   util_computeKernel  | return value |
+|ap_rst                          |  in |    1| ap_ctrl_hs |   util_computeKernel  | return value |
+|ap_start                        |  in |    1| ap_ctrl_hs |   util_computeKernel  | return value |
+|ap_done                         | out |    1| ap_ctrl_hs |   util_computeKernel  | return value |
+|ap_idle                         | out |    1| ap_ctrl_hs |   util_computeKernel  | return value |
+|ap_ready                        | out |    1| ap_ctrl_hs |   util_computeKernel  | return value |
+|partialOutputBuffer_s_address0  | out |    3|  ap_memory | partialOutputBuffer_s |     array    |
+|partialOutputBuffer_s_ce0       | out |    1|  ap_memory | partialOutputBuffer_s |     array    |
+|partialOutputBuffer_s_we0       | out |    1|  ap_memory | partialOutputBuffer_s |     array    |
+|partialOutputBuffer_s_d0        | out |   16|  ap_memory | partialOutputBuffer_s |     array    |
+|partialOutputBuffer_s_q0        |  in |   16|  ap_memory | partialOutputBuffer_s |     array    |
+|computeCache_V_address0         | out |   10|  ap_memory |     computeCache_V    |     array    |
+|computeCache_V_ce0              | out |    1|  ap_memory |     computeCache_V    |     array    |
+|computeCache_V_q0               |  in |   16|  ap_memory |     computeCache_V    |     array    |
+|computeStream_V_address0        | out |    7|  ap_memory |    computeStream_V    |     array    |
+|computeStream_V_ce0             | out |    1|  ap_memory |    computeStream_V    |     array    |
+|computeStream_V_q0              |  in |   16|  ap_memory |    computeStream_V    |     array    |
++--------------------------------+-----+-----+------------+-----------------------+--------------+
+

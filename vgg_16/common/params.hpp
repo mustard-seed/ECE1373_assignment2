@@ -4,7 +4,7 @@
 
 /* Interface parameters */
 #define PORT_WIDTH_BYTE 16  //Data bus width to the PR region is 128 bits
-
+#define SIZE_OF_FLOAT 4
 /* General parameters  */
 #define MAX_BATCH 16
 #define MAX_LAYER (0x1 << 6)
@@ -44,7 +44,7 @@
 #define NUM_TILE_INPUT_CONV_Y (0X1 << EXP_TILE_INPUT_CONV_Y) //2^2 = 4
 #define NUM_TILE_INPUT_CONV_Z (0X1 << EXP_TILE_INPUT_CONV_Z) //2^3 = 8
 
-#define NUM_TILE_BROADCAST 128 //2^(2+2+3)
+#define NUM_TILE_BROADCAST 128 //2^(2+2+2)
 #define EXP_DEPTH_INPUT_CONV_X 6
 #define EXP_DEPTH_INPUT_CONV_Y 6
 #define EXP_DEPTH_INPUT_CONV_Z 0
