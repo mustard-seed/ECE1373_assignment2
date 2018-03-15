@@ -25,8 +25,15 @@ include(functions.cmake)
 #add_executable(${PROJECT_NAME} "main.cpp")
 add_definitions(-DSW_ONLY=1)
 
-include_directories(common) #Contontains header files that define data type, tiling and parallelization parameters
-add_subdirectory(utilities)
-add_subdirectory(convLayer)
+#include_directories(common) #Contontains header files that define data type, tiling and parallelization parameters
+#INCLUDE_DIRECTORIES(utilities)
+#INCLUDE_DIRECTORIES(convLayer)
+#INCLUDE_DIRECTORIES(accelerator)
+INCLUDE_DIRECTORIES(.)
+#INCLUDE_DIRECTORIES(shared)
+#add_subdirectory(utilities)
+#add_subdirectory(convLayer)
+add_subdirectory(shared)
 #add_subdirectory(fcLayer)
 #add_subdirectory()
+add_subdirectory(accelerator)

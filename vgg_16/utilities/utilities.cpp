@@ -1,10 +1,9 @@
-#include "utilities.hpp"
+#include "utilities/utilities.hpp"
 
 
-void util_computeKernel(
-        t_conv partialOutputBuffer[NUM_PARALLEL_K],
-        t_conv computeCache [NUM_PARALLEL_K][NUM_PARALLEL_ONE_KERNEL],
-        t_conv computeStream [NUM_PARALLEL_ONE_KERNEL]
+void util_computeKernel(t_conv (partialOutputBuffer&)[NUM_PARALLEL_K],
+                        const t_conv (computeCache&) [NUM_PARALLEL_K][NUM_PARALLEL_ONE_KERNEL],
+                        const t_conv (computeStream&) [NUM_PARALLEL_ONE_KERNEL]
 )
 {
     for (unsigned int iterOutput=0; iterOutput<NUM_PARALLEL_K; iterOutput++)

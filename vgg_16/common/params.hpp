@@ -6,7 +6,15 @@
 #define PORT_WIDTH_BYTE 16  //Data bus width to the PR region is 128 bits
 
 /* General parameters  */
-#define MAX_BATCH 10
+#define MAX_BATCH 16
+#define MAX_LAYER (0x1 << 6)
+
+#define BYTE_OFFSET_PARAMETERS 0
+#define BYTE_SIZE_PARAMETERS_PER_LAYER (0x1 << 23)
+
+#define BYTE_SIZE_ACTIVATION (0x1 << 29)
+#define BYTE_OFFSET_ACTIVATION_A (MAX_LAYER * BYTE_SIZE_PARAMETERS_PER_LAYER)
+#define BYTE_OFFSET_ACTIVATION_B (BYTE_OFFSET_ACTIVATION_A  + BYTE_SIZE_ACTIVATION)
 
 /* Fully-connected layer related parameters*/
 #define FC_MAX_INPUT_SIZE 25088

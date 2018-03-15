@@ -1,9 +1,41 @@
-#ifndef CONVLAYER_HPP
-#define CONVLAYER_HPP
+#ifndef ACCELERATOR_HPP
+#define ACCELERATOR_HPP
 #include "common/types.hpp"
 #include "common/params.hpp"
+#include <iostream>
+#include <cstring>
 
-namespace hls {
+enum layerType {CONVLayer, FCLayer, POOLLayer};
+
+void accelerator (
+        float * mem, //global memory pointer
+        unsigned int inputByteOffset,       // offset of inputs in BYTES
+        unsigned int outputByteOffset,      // offset of outputs in BYTES
+        unsigned int parametersByteOffset,  // offset of parameters in BYTES
+        const unsigned int batchSize,            // batch size
+        const bool useReLu, //whether to use ReLu (ALL)
+
+        layerType type,
+
+        const unsigned int k,           // output number of kernels (CONV, POOL), or number of outputs (FC)
+        const unsigned int n,           // output width (CONV)
+        const unsigned int m,           // output height (CONV)
+        const unsigned int c,           // input number of channels  (CONV, POOL), or number of inputs (FC)
+        const unsigned int w,           // input width (CONV, POOL)
+        const unsigned int h,           // input height (CONV, POOL)
+        const unsigned int stride,            // stride (CONV, POOL)
+        const unsigned int kernelSize ,        // kernel size (CONV, POOL)
+        const unsigned int pad  //pad size (CONV, POOL)
+
+        );
+
+void util_computeKernel(
+        t_conv (&partialOutputBuffer)[NUM_PARALLEL_K],
+        const t_conv (&computeCache) [NUM_PARALLEL_K][NUM_PARALLEL_ONE_KERNEL],
+       const t_conv (&computeStream) [NUM_PARALLEL_ONE_KERNEL]
+);
+
+
 void convLayer_Forward(float * mem,            // global memory pointer
                 const unsigned int inputByteOffset,       // offset of inputs in BYTES
                 const unsigned int outputByteOffset,      // offset of outputs in BYTES
@@ -88,7 +120,7 @@ void convLayer_WrapperLoadWeightsAndInputs(
         const unsigned int weightKOffset //starting offset in K dimension
         );
 void convLayer_PrepareOutputBuffer (
-        const float *memInput, //point to start loading biases
+        const float * &memInput, //point to start loading biases
         t_conv (&bufferWeights) [NUM_TILE_OUTPUT][NUM_DEPTH_BROADCAST], //Array of on-chip buffer storing partial sums
         const unsigned int outputKMax,   //Output number of filters
         const unsigned int outputMMax,  //Output height
@@ -112,5 +144,4 @@ void convLayer_ComputePartialSum (
         const unsigned int weightKOffset, //starting offset in K dimension
         const unsigned int stride //Stride
         );
-}
-#endif // CONVLAYER_HPP
+#endif // ACCELERATOR_HPP

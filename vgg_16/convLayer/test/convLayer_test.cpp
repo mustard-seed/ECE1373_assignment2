@@ -1,4 +1,4 @@
-#include "../convLayer.hpp"
+#include "convLayer/convLayer.hpp"
 #include <iostream>
 #include <algorithm>
 #include <cstdlib>

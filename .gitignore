@@ -14,6 +14,8 @@ hd_visual
 office_data/
 data/
 *test_pr/
+!*/script.tcl
+!*/directives.tcl
 
 #CMakeLists
 *.user
