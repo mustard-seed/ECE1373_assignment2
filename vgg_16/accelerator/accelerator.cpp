@@ -158,7 +158,7 @@ void convLayer_Forward(float * mem,            // global memory pointer
                         iterK
                         );
            CONVLAYER_FORWARD_FOR_C:
-            for (unsigned int iterC=0; iterC < c; iterC++)
+            for (unsigned int iterC=0; iterC < c; iterC+=NUM_PARALLEL_C)
             {
                 convLayer_WrapperLoadWeightsAndInputs(
                             mem,
@@ -515,10 +515,10 @@ void convLayer_LoadWeights (
                      partialIndexBufferS < NUM_PARALLEL_X;
                      partialIndexBufferS += packetLength, partialIndexWeightS += packetLength)
                 {
-                	for (unsigned int iter=0; iter < PORT_WIDTH_BYTE / SIZE_OF_FLOAT; iter++)
-                	{
-                		bufferDDR[iter] = *(memInput+partialIndexWeightK+partialIndexWeightC+partialIndexWeightR+partialIndexWeightS+iter);
-                	}
+
+                	memcpy((float *)&bufferDDR[0], (float *)(memInput+partialIndexWeightK+partialIndexWeightC+partialIndexWeightR+partialIndexWeightS),
+                            PORT_WIDTH_BYTE);
+
                     for (unsigned int iter=0; iter<packetLength; iter++)
                     {
                         if (iter+partialIndexBufferS < weightSMax && iterBufferR < weightRMax && iterBufferC+weightCOffset < weightCMax
@@ -648,6 +648,7 @@ void convLayer_ComputePartialSum (
         const unsigned int stride //Stride
         )
 {
+#pragma HLS INLINE
     t_conv bufferInputCompute [NUM_PARALLEL_ONE_KERNEL];
     t_conv bufferOutputCompute [NUM_PARALLEL_K];
 
