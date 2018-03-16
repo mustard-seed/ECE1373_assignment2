@@ -175,9 +175,10 @@ for key, value in lmdb_cursor:
             # Write inputs and outputs
             with open(dirname + '/input', 'wb') as f:
                 pad_arr.tofile(f)
+                print(dirname+'/input  non-zero count: %d' % np.count_nonzero(pad_arr))
             with open(dirname + '/output', 'wb') as f:
                 output_blob.tofile(f)
-    
+                print(dirname+'/output  non-zero count: %d' % np.count_nonzero(output_blob))
 
             # Create a packed version of inputs for DMA
             with open(dirname + '/dma_in', 'wb') as f:
