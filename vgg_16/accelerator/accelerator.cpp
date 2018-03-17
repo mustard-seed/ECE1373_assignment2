@@ -141,8 +141,6 @@ void convLayer_Forward(float * mem,            // global memory pointer
 
    const unsigned int inputOffsetIterBatchConstant = h*w*c;
    const unsigned int outputOffsetIterBatchConstant = m*n*k;
-#pragma HLS RESOURCE variable=inputOffsetIterBatchConstant core=Mul_LUT
-#pragma HLS RESOURCE variable=outputOffsetIterBatchConstant core=Mul_LUT
 
    CONVLAYER_FORWARD_FOR_BATCH:
     for (unsigned int iterBatch = 0, inputPartialIndexIterBatch = 0, outputPartialIndexBatch = 0;
@@ -239,7 +237,6 @@ void convLayer_LoadBroadcastBuffer (const float *memInput, //global memory point
 
     //Partial offset in C dimension
     const unsigned int partialOffsetC = inputCOffset*inputHMax*inputWMax;
-#pragma HLS RESOURCE variable=partialOffsetC core=Mul_LUT
 
     //Partial indices
 //    unsigned int partialDepthInputCMinor;
@@ -529,9 +526,6 @@ void convLayer_LoadWeights (
     const unsigned int partialOffsetBufferC = NUM_PARALLEL_Y*NUM_PARALLEL_X;
     const unsigned int partialOffsetBufferR = NUM_PARALLEL_X;
 
-#pragma HLS RESOURCE variable=partialOffsetWeightK core=Mul_LUT
-#pragma HLS RESOURCE variable=partialOffsetWeightC core=Mul_LUT
-#pragma HLS RESOURCE variable=partialOffsetBufferC core=Mul_LUT
 
     CONVLAYER_LOADWEIGHTS_FOR_PARALLEL_K:
     for (unsigned int iterBufferK=0, partialIndexWeightK=weightKOffset*partialOffsetWeightK;

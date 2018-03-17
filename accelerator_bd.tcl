@@ -211,6 +211,11 @@ CONFIG.FREQ_HZ {250000000} \
 CONFIG.C_M_AXI_MEM_ENABLE_USER_PORTS {false} \
  ] $accelerator_0
 
+  set_property -dict [ list \
+CONFIG.NUM_READ_OUTSTANDING {1} \
+CONFIG.NUM_WRITE_OUTSTANDING {1} \
+ ] [get_bd_intf_pins /accelerator_0/s_axi_CTRL_BUS]
+
   # Create instance: axi_interconnect_0, and set properties
   set axi_interconnect_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 axi_interconnect_0 ]
   set_property -dict [ list \
@@ -237,38 +242,6 @@ CONFIG.S01_HAS_DATA_FIFO {1} \
 CONFIG.S01_HAS_REGSLICE {3} \
  ] $axi_interconnect_1
 
-  # Create instance: clk_wiz_0, and set properties
-  set clk_wiz_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:clk_wiz:5.4 clk_wiz_0 ]
-  set_property -dict [ list \
-CONFIG.CLKIN1_JITTER_PS {40.0} \
-CONFIG.CLKOUT1_DRIVES {Buffer} \
-CONFIG.CLKOUT1_JITTER {130.067} \
-CONFIG.CLKOUT1_MATCHED_ROUTING {true} \
-CONFIG.CLKOUT1_PHASE_ERROR {122.096} \
-CONFIG.CLKOUT1_REQUESTED_OUT_FREQ {125.00} \
-CONFIG.CLKOUT2_DRIVES {Buffer} \
-CONFIG.CLKOUT3_DRIVES {Buffer} \
-CONFIG.CLKOUT4_DRIVES {Buffer} \
-CONFIG.CLKOUT5_DRIVES {Buffer} \
-CONFIG.CLKOUT6_DRIVES {Buffer} \
-CONFIG.CLKOUT7_DRIVES {Buffer} \
-CONFIG.ENABLE_CLOCK_MONITOR {false} \
-CONFIG.MMCM_CLKFBOUT_MULT_F {5} \
-CONFIG.MMCM_CLKIN1_PERIOD {4.000} \
-CONFIG.MMCM_CLKIN2_PERIOD {10.0} \
-CONFIG.MMCM_CLKOUT0_DIVIDE_F {5} \
-CONFIG.MMCM_COMPENSATION {AUTO} \
-CONFIG.MMCM_DIVCLK_DIVIDE {2} \
-CONFIG.PRIMITIVE {PLL} \
-CONFIG.PRIM_IN_FREQ {250.00} \
-CONFIG.PRIM_SOURCE {No_buffer} \
-CONFIG.RESET_PORT {resetn} \
-CONFIG.RESET_TYPE {ACTIVE_LOW} \
-CONFIG.SECONDARY_SOURCE {Single_ended_clock_capable_pin} \
-CONFIG.USE_PHASE_ALIGNMENT {false} \
-CONFIG.USE_RESET {true} \
- ] $clk_wiz_0
-
   # Create instance: pcl_axifull_bridge_0, and set properties
   set pcl_axifull_bridge_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:pcl_axifull_bridge:1.0 pcl_axifull_bridge_0 ]
   set_property -dict [ list \
@@ -283,6 +256,15 @@ CONFIG.ADDR_WIDTH {19} \
 CONFIG.DATA_WIDTH {32} \
  ] $pcl_axilite_bridge_0
 
+  set_property -dict [ list \
+CONFIG.MAX_BURST_LENGTH {1} \
+ ] [get_bd_intf_pins /pcl_axilite_bridge_0/m_axi]
+
+  set_property -dict [ list \
+CONFIG.NUM_READ_OUTSTANDING {1} \
+CONFIG.NUM_WRITE_OUTSTANDING {1} \
+ ] [get_bd_intf_pins /pcl_axilite_bridge_0/s_axi]
+
   # Create instance: proc_sys_reset_0, and set properties
   set proc_sys_reset_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 proc_sys_reset_0 ]
 
@@ -295,9 +277,8 @@ CONFIG.DATA_WIDTH {32} \
   connect_bd_intf_net -intf_net s_axi_1 [get_bd_intf_ports s_axi] [get_bd_intf_pins pcl_axilite_bridge_0/s_axi]
 
   # Create port connections
-  connect_bd_net -net S00_ARESETN_1 [get_bd_ports S00_ARESETN] [get_bd_pins axi_interconnect_0/ARESETN] [get_bd_pins axi_interconnect_0/S00_ARESETN] [get_bd_pins axi_interconnect_1/ARESETN] [get_bd_pins axi_interconnect_1/M00_ARESETN] [get_bd_pins clk_wiz_0/resetn] [get_bd_pins pcl_axifull_bridge_0/aresetn] [get_bd_pins pcl_axilite_bridge_0/aresetn] [get_bd_pins proc_sys_reset_0/ext_reset_in]
-  connect_bd_net -net axi_aclk_1 [get_bd_ports axi_aclk] [get_bd_pins axi_interconnect_0/ACLK] [get_bd_pins axi_interconnect_0/S00_ACLK] [get_bd_pins axi_interconnect_1/ACLK] [get_bd_pins axi_interconnect_1/M00_ACLK] [get_bd_pins clk_wiz_0/clk_in1] [get_bd_pins pcl_axifull_bridge_0/aclk] [get_bd_pins pcl_axilite_bridge_0/aclk]
-  connect_bd_net -net clk_wiz_0_clk_out1 [get_bd_pins accelerator_0/ap_clk] [get_bd_pins axi_interconnect_0/M00_ACLK] [get_bd_pins axi_interconnect_1/S00_ACLK] [get_bd_pins axi_interconnect_1/S01_ACLK] [get_bd_pins clk_wiz_0/clk_out1] [get_bd_pins proc_sys_reset_0/slowest_sync_clk]
+  connect_bd_net -net S00_ARESETN_1 [get_bd_ports S00_ARESETN] [get_bd_pins axi_interconnect_0/ARESETN] [get_bd_pins axi_interconnect_0/S00_ARESETN] [get_bd_pins axi_interconnect_1/ARESETN] [get_bd_pins axi_interconnect_1/M00_ARESETN] [get_bd_pins pcl_axifull_bridge_0/aresetn] [get_bd_pins pcl_axilite_bridge_0/aresetn] [get_bd_pins proc_sys_reset_0/ext_reset_in]
+  connect_bd_net -net axi_aclk_1 [get_bd_ports axi_aclk] [get_bd_pins accelerator_0/ap_clk] [get_bd_pins axi_interconnect_0/ACLK] [get_bd_pins axi_interconnect_0/M00_ACLK] [get_bd_pins axi_interconnect_0/S00_ACLK] [get_bd_pins axi_interconnect_1/ACLK] [get_bd_pins axi_interconnect_1/M00_ACLK] [get_bd_pins axi_interconnect_1/S00_ACLK] [get_bd_pins axi_interconnect_1/S01_ACLK] [get_bd_pins pcl_axifull_bridge_0/aclk] [get_bd_pins pcl_axilite_bridge_0/aclk] [get_bd_pins proc_sys_reset_0/slowest_sync_clk]
   connect_bd_net -net proc_sys_reset_0_interconnect_aresetn [get_bd_pins axi_interconnect_0/M00_ARESETN] [get_bd_pins axi_interconnect_1/S00_ARESETN] [get_bd_pins axi_interconnect_1/S01_ARESETN] [get_bd_pins proc_sys_reset_0/interconnect_aresetn]
   connect_bd_net -net proc_sys_reset_0_peripheral_aresetn [get_bd_pins accelerator_0/ap_rst_n] [get_bd_pins proc_sys_reset_0/peripheral_aresetn]
 
