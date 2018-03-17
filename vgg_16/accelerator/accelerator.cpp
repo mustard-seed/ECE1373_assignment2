@@ -42,6 +42,7 @@ void accelerator (
 #pragma HLS INTERFACE s_axilite port=stride bundle=CTRL_BUS
 #pragma HLS INTERFACE s_axilite port=kernelSize bundle=CTRL_BUS
 #pragma HLS INTERFACE s_axilite port=pad bundle=CTRL_BUS
+#pragma HLS INTERFACE s_axilite port=return bundle=CTRL_BUS
 
 
     //ON CHIP BUFFERS

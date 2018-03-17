@@ -57,7 +57,7 @@
 
 #define NUM_INPUT_X 256
 #define NUM_INPUT_Y 256
-#define NUM_INPUT_Z 4
+#define NUM_INPUT_Z 1
 
 /* On-chip output buffer parameters */
 /* On-chip broadcast buffer parameters */
@@ -89,7 +89,7 @@
 For VGG-16 ONLY!!!!*/
 #define NUM_PARALLEL_X 3
 #define NUM_PARALLEL_Y 3
-#define NUM_PARALLEL_C 4
+#define NUM_PARALLEL_C 1
 #define NUM_PARALLEL_K 8
 #define NUM_PARALLEL_ONE_KERNEL (NUM_PARALLEL_C*NUM_PARALLEL_Y*NUM_PARALLEL_X)
 
