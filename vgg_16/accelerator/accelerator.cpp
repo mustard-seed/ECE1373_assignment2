@@ -47,10 +47,11 @@ void accelerator (
     //ON CHIP BUFFERS
 
     //bufferBroadcast. Stores inputs during CONV and POOL operation. Store weights during FC operation
-    t_conv bufferBroadcast[NUM_TILE_BROADCAST][NUM_DEPTH_BROADCAST];
+    //t_conv bufferBroadcast[NUM_TILE_BROADCAST][NUM_DEPTH_BROADCAST];
+    t_conv bufferBroadcast[NUM_INPUT_Z][NUM_INPUT_Y][NUM_INPUT_X];
 
     //bufferOutput
-    t_conv bufferOutput [NUM_TILE_BROADCAST][NUM_DEPTH_BROADCAST];
+    t_conv bufferOutput[NUM_OUTPUT_Z][NUM_OUTPUT_Y][NUM_OUTPUT_X];
  //Array of on-chip buffer storing partial sums
 
     //bufferCache. Stores weights during CONV and POOL operations. Stores inputs during FC operations
@@ -97,13 +98,14 @@ void util_computeKernel(
        const t_conv (&computeStream) [NUM_PARALLEL_ONE_KERNEL]
 )
 {
+
 	COMPUTE_FOR_OUTPUT:
 	for (unsigned int iterOutput=0; iterOutput<NUM_PARALLEL_K; iterOutput++)
     {
 		COMPUTE_FOR_DOT_PRODUCT:
         for (unsigned int iterDotProduct=0; iterDotProduct<NUM_PARALLEL_ONE_KERNEL; iterDotProduct++)
         {
-            partialOutputBuffer[iterOutput]
+        	partialOutputBuffer[iterOutput]
                     += computeCache[iterOutput][iterDotProduct]
                     *computeStream[iterDotProduct];
         }
@@ -114,8 +116,8 @@ void convLayer_Forward(float * mem,            // global memory pointer
                 const unsigned int inputByteOffset,       // offset of inputs in BYTES
                 const unsigned int outputByteOffset,      // offset of outputs in BYTES
                 const unsigned int parametersByteOffset,  // offset of parameters in BYTES
-                t_conv (&bufferBroadcast)[NUM_TILE_BROADCAST][NUM_DEPTH_BROADCAST], //Array of on-chip buffer storing inputs
-                t_conv (&bufferOutput) [NUM_TILE_OUTPUT][NUM_DEPTH_OUTPUT], //Array of on-chip buffer storing partial sums
+                t_conv (&bufferBroadcast)[NUM_INPUT_Z][NUM_INPUT_Y][NUM_INPUT_X], //Array of on-chip buffer storing inputs
+                t_conv (&bufferOutput) [NUM_OUTPUT_Z][NUM_OUTPUT_Y][NUM_OUTPUT_X], //Array of on-chip buffer storing partial sums
                 t_conv (&bufferWeights)[NUM_PARALLEL_K][NUM_PARALLEL_ONE_KERNEL], //weight buffer
                 const unsigned int batchSize,            // batch size
                 const unsigned int k,           // output number of kernels
@@ -130,13 +132,21 @@ void convLayer_Forward(float * mem,            // global memory pointer
                 const bool useReLu //whether to use ReLu
                 )
 {
+
 #pragma HLS INLINE
 
-    const float * pointerBias = (float *)(mem + parametersByteOffset/SIZE_OF_FLOAT);
-   const unsigned int offsetWeight = parametersByteOffset/SIZE_OF_FLOAT + k;
+    const float * pointerBias = (float *)(mem + parametersByteOffset/SIZE_OF_FLOAT + k*kernelSize*kernelSize*c);
+   const unsigned int offsetWeight = parametersByteOffset/SIZE_OF_FLOAT;
+
+   const unsigned int inputOffsetIterBatchConstant = h*w*c;
+   const unsigned int outputOffsetIterBatchConstant = m*n*k;
+#pragma HLS RESOURCE variable=inputOffsetIterBatchConstant core=Mul_LUT
+#pragma HLS RESOURCE variable=outputOffsetIterBatchConstant core=Mul_LUT
 
    CONVLAYER_FORWARD_FOR_BATCH:
-	for (unsigned int iterBatch = 0; iterBatch < batchSize; iterBatch++)
+    for (unsigned int iterBatch = 0, inputPartialIndexIterBatch = 0, outputPartialIndexBatch = 0;
+         iterBatch < batchSize;
+         iterBatch++,  inputPartialIndexIterBatch+=inputOffsetIterBatchConstant , outputPartialIndexBatch += outputOffsetIterBatchConstant)
     {
 #ifndef __SYNTHESIS__
         std::cout <<"Working on batch index "<<iterBatch<<std::endl;
@@ -163,7 +173,7 @@ void convLayer_Forward(float * mem,            // global memory pointer
                 convLayer_WrapperLoadWeightsAndInputs(
                             mem,
                             offsetWeight,
-                            inputByteOffset/SIZE_OF_FLOAT + iterBatch*h*w*c,
+                            inputByteOffset/SIZE_OF_FLOAT + inputPartialIndexIterBatch,
                             bufferBroadcast,
                             bufferWeights,
                             c,
@@ -194,7 +204,7 @@ void convLayer_Forward(float * mem,            // global memory pointer
             }
 
             convLayer_OffloadOutputBuffer(
-                        (float *)(mem + outputByteOffset/SIZE_OF_FLOAT + iterBatch*m*n*k),
+                        (float *)(mem + outputByteOffset/SIZE_OF_FLOAT + outputPartialIndexBatch),
                         bufferOutput,
                         k,
                         m,
@@ -207,7 +217,7 @@ void convLayer_Forward(float * mem,            // global memory pointer
 }
 
 void convLayer_LoadBroadcastBuffer (const float *memInput, //global memory pointer to where to start loading inputs.
-        t_conv (&bufferBroadcast)[NUM_TILE_BROADCAST][NUM_DEPTH_BROADCAST], //Array of on-chip buffer storing inputs
+        t_conv (&bufferBroadcast)[NUM_INPUT_Z][NUM_INPUT_Y][NUM_INPUT_X], //Array of on-chip buffer storing inputs
         const unsigned int inputCMax,           // input dimensions
         const unsigned int inputWMax,           // input width
         const unsigned int inputHMax,           // input height
@@ -219,27 +229,28 @@ void convLayer_LoadBroadcastBuffer (const float *memInput, //global memory point
     const unsigned int lengthInputPacket = PORT_WIDTH_BYTE / SIZE_OF_FLOAT;
 
     //Actual limit in the dimension of channels
-    const unsigned int inputCMaxActual = inputCMax < inputCOffset + NUM_TILE_INPUT_CONV_Z ?
+    const unsigned int inputCMaxActual = inputCMax < inputCOffset + NUM_INPUT_Z?
                                                                       inputCMax :
-                                                                      inputCOffset + NUM_TILE_INPUT_CONV_Z;
+                                                                      inputCOffset + NUM_INPUT_Z;
 
     //Counter for the number of data written to the on-chip buffer.
     unsigned int iterMemInput = 0;
 
     //Partial offset in C dimension
-    unsigned int partialOffsetC = inputCOffset*inputHMax*inputWMax;
+    const unsigned int partialOffsetC = inputCOffset*inputHMax*inputWMax;
+#pragma HLS RESOURCE variable=partialOffsetC core=Mul_LUT
 
     //Partial indices
-    unsigned int partialDepthInputCMinor;
-    unsigned int partialDepthInputH;
-    unsigned int partialDepthInputW;
-    unsigned int partialBankInputCMinor;
-    unsigned int partialBankInputH;
-    unsigned int partialBankInputW;
+//    unsigned int partialDepthInputCMinor;
+//    unsigned int partialDepthInputH;
+//    unsigned int partialDepthInputW;
+//    unsigned int partialBankInputCMinor;
+//    unsigned int partialBankInputH;
+//    unsigned int partialBankInputW;
 
     //Actual max W and H that take padding into account.
-    const unsigned int bufferWMax = inputWMax + 2*pad;
-    const unsigned int bufferHMax = inputHMax + 2*pad;
+    const unsigned int bufferWMax = inputWMax + pad + pad;
+    const unsigned int bufferHMax = inputHMax + pad + pad;
 
 
     //Buffer to temporarily hold incoming data
@@ -251,10 +262,10 @@ void convLayer_LoadBroadcastBuffer (const float *memInput, //global memory point
          iterC < inputCMaxActual;
          iterC++, iterCMinor++)
     {
-        partialDepthInputCMinor = (iterCMinor >> EXP_TILE_INPUT_CONV_Z)
-                << (EXP_DEPTH_INPUT_CONV_X + EXP_DEPTH_INPUT_CONV_Y);
-        partialBankInputCMinor = (iterCMinor & MASK_TILE_INPUT_CONV_Z)
-               << (EXP_TILE_INPUT_CONV_X + EXP_TILE_INPUT_CONV_Y);
+//        partialDepthInputCMinor = (iterCMinor >> EXP_TILE_INPUT_CONV_Z)
+//                << (EXP_DEPTH_INPUT_CONV_X + EXP_DEPTH_INPUT_CONV_Y);
+//        partialBankInputCMinor = (iterCMinor & MASK_TILE_INPUT_CONV_Z)
+//               << (EXP_TILE_INPUT_CONV_X + EXP_TILE_INPUT_CONV_Y);
 
 
 
@@ -262,32 +273,30 @@ void convLayer_LoadBroadcastBuffer (const float *memInput, //global memory point
         CONVLAYER_LOADBROACASTBUFFER_FOR_PAD_TOPBOTTOM:
         for (unsigned iterBufferW = 0; iterBufferW <bufferWMax; iterBufferW++ )
         {
-            partialDepthInputW = (iterBufferW >> EXP_TILE_INPUT_CONV_X);
-            partialBankInputW = (iterBufferW & MASK_TILE_INPUT_CONV_X);
+//            partialDepthInputW = (iterBufferW >> EXP_TILE_INPUT_CONV_X);
+//            partialBankInputW = (iterBufferW & MASK_TILE_INPUT_CONV_X);
 
             convLayer_LoadBroadcastBuffer_label1:
-			for (unsigned iterBufferH =0; iterBufferH < pad; iterBufferH++)
+            for (unsigned iterBufferH =0; iterBufferH < pad; iterBufferH++)
             {
-                partialDepthInputH = (iterBufferH >> EXP_TILE_INPUT_CONV_Y)
-                         << EXP_DEPTH_INPUT_CONV_X;
-                partialBankInputH = (iterBufferH & MASK_TILE_INPUT_CONV_Y)
-                         << NUM_TILE_INPUT_CONV_X;
+//                partialDepthInputH = (iterBufferH >> EXP_TILE_INPUT_CONV_Y)
+//                         << EXP_DEPTH_INPUT_CONV_X;
+//                partialBankInputH = (iterBufferH & MASK_TILE_INPUT_CONV_Y)
+//                         << NUM_TILE_INPUT_CONV_X;
 
-                 bufferBroadcast[partialBankInputCMinor + partialBankInputH + partialBankInputW]
-                    [partialDepthInputCMinor + partialDepthInputH + partialDepthInputW]
+                 bufferBroadcast[iterCMinor][iterBufferH][iterBufferW]
                     = 0;
             }
-			convLayer_LoadBroadcastBuffer_label2:
-			for (unsigned iterBufferH =inputHMax+pad; iterBufferH < bufferHMax; iterBufferH++)
+            convLayer_LoadBroadcastBuffer_label2:
+            for (unsigned iterBufferH =inputHMax+pad; iterBufferH < bufferHMax; iterBufferH++)
             {
-                partialDepthInputH = (iterBufferH >> EXP_TILE_INPUT_CONV_Y)
-                        << EXP_DEPTH_INPUT_CONV_X;
-                partialBankInputH = (iterBufferH & MASK_TILE_INPUT_CONV_Y)
-                        << EXP_TILE_INPUT_CONV_X;
+//                partialDepthInputH = (iterBufferH >> EXP_TILE_INPUT_CONV_Y)
+//                        << EXP_DEPTH_INPUT_CONV_X;
+//                partialBankInputH = (iterBufferH & MASK_TILE_INPUT_CONV_Y)
+//                        << EXP_TILE_INPUT_CONV_X;
 
-                 bufferBroadcast[partialBankInputCMinor + partialBankInputH + partialBankInputW]
-                    [partialDepthInputCMinor + partialDepthInputH + partialDepthInputW]
-                    = 0;
+                bufferBroadcast[iterCMinor][iterBufferH][iterBufferW]
+                   = 0;
             }
         }
 
@@ -296,32 +305,30 @@ void convLayer_LoadBroadcastBuffer (const float *memInput, //global memory point
         CONVLAYER_LOADBROACASTBUFFER_FOR_PAD_LEFTRIGHT:
         for (unsigned iterBufferH =0; iterBufferH < bufferHMax; iterBufferH++)
         {
-            partialDepthInputH = (iterBufferH >> EXP_TILE_INPUT_CONV_Y) *
-                    NUM_DEPTH_INPUT_CONV_X;
-            partialBankInputH = (iterBufferH & MASK_TILE_INPUT_CONV_Y)
-                    *  NUM_TILE_INPUT_CONV_X;
+//            partialDepthInputH = (iterBufferH >> EXP_TILE_INPUT_CONV_Y) *
+//                    NUM_DEPTH_INPUT_CONV_X;
+//            partialBankInputH = (iterBufferH & MASK_TILE_INPUT_CONV_Y)
+//                    *  NUM_TILE_INPUT_CONV_X;
 
             convLayer_LoadBroadcastBuffer_label3:
-			for (unsigned iterBufferW = 0; iterBufferW <pad; iterBufferW++ )
+            for (unsigned iterBufferW = 0; iterBufferW <pad; iterBufferW++ )
             {
-                partialDepthInputW = (iterBufferW >> EXP_TILE_INPUT_CONV_X);
-                partialBankInputW = (iterBufferW & MASK_TILE_INPUT_CONV_X);
+//                partialDepthInputW = (iterBufferW >> EXP_TILE_INPUT_CONV_X);
+//                partialBankInputW = (iterBufferW & MASK_TILE_INPUT_CONV_X);
 
-                bufferBroadcast[partialBankInputCMinor + partialBankInputH + partialBankInputW]
-                        [partialDepthInputCMinor + partialDepthInputH + partialDepthInputW]
-                        = 0;
+                bufferBroadcast[iterCMinor][iterBufferH][iterBufferW]
+                   = 0;
 
             }
 
         convLayer_LoadBroadcastBuffer_label4:
-		for (unsigned iterBufferW = inputWMax+pad; iterBufferW <bufferWMax; iterBufferW++ )
+        for (unsigned iterBufferW = inputWMax+pad; iterBufferW <bufferWMax; iterBufferW++ )
             {
-                partialDepthInputW = (iterBufferW >> EXP_TILE_INPUT_CONV_X);
-                partialBankInputW = (iterBufferW & MASK_TILE_INPUT_CONV_X);
+//                partialDepthInputW = (iterBufferW >> EXP_TILE_INPUT_CONV_X);
+//                partialBankInputW = (iterBufferW & MASK_TILE_INPUT_CONV_X);
 
-                bufferBroadcast[partialBankInputCMinor + partialBankInputH + partialBankInputW]
-                        [partialDepthInputCMinor + partialDepthInputH + partialDepthInputW]
-                        = 0;
+            bufferBroadcast[iterCMinor][iterBufferH][iterBufferW]
+               = 0;
 
             }
         }
@@ -330,10 +337,10 @@ void convLayer_LoadBroadcastBuffer (const float *memInput, //global memory point
         CONVLAYER_LOADBROACASTBUFFER_FOR_LOAD_H:
         for (unsigned int iterInputH = 0; iterInputH < inputHMax; iterInputH++)
         {
-            partialDepthInputH = ( (iterInputH + pad) >> EXP_TILE_INPUT_CONV_Y)
-                   << EXP_DEPTH_INPUT_CONV_X;
-            partialBankInputH = ( (iterInputH + pad) & MASK_TILE_INPUT_CONV_Y)
-                    << EXP_TILE_INPUT_CONV_X;
+//            partialDepthInputH = ( (iterInputH + pad) >> EXP_TILE_INPUT_CONV_Y)
+//                   << EXP_DEPTH_INPUT_CONV_X;
+//            partialBankInputH = ( (iterInputH + pad) & MASK_TILE_INPUT_CONV_Y)
+//                    << EXP_TILE_INPUT_CONV_X;
 
             CONVLAYER_LOADBROACASTBUFFER_FOR_LOAD_W:
             for (unsigned int iterInputW = 0; iterInputW < inputWMax; iterInputW += lengthInputPacket)
@@ -343,34 +350,45 @@ void convLayer_LoadBroadcastBuffer (const float *memInput, //global memory point
                 //TODO: verify the address is correct.
                 memcpy((float *)&bufferDDR[0], (float *)(memInput + partialOffsetC + iterMemInput), PORT_WIDTH_BYTE);
 
-                //Write data from DDR to the on-chip memory
-                CONVLAYER_LOADBROACASTBUFFER_FOR_LOAD_PACKET:
-                for (unsigned int iter=0; iter<lengthInputPacket; iter++)
+                convLayer_LoadBroadcastBuffer_label0:
+                for (unsigned int iter=0; iter < lengthInputPacket; iter++)
                 {
-                    if (iterInputW + iter < inputWMax)
+                    if (iter + iterInputW < inputWMax)
                     {
-                        partialDepthInputW = ( (iterInputW + iter+ pad) >> EXP_TILE_INPUT_CONV_X);
-                        partialBankInputW = ( (iterInputW + iter + pad) & MASK_TILE_INPUT_CONV_X);
-
-                        bufferBroadcast[partialBankInputCMinor + partialBankInputH + partialBankInputW]
-                                [partialDepthInputCMinor + partialDepthInputH + partialDepthInputW]
-                                = (t_conv) bufferDDR[iter];
+                        bufferBroadcast[iterCMinor][iterInputH+pad][iter+iterInputW+pad] = (t_conv) bufferDDR[iter];
                         iterMemInput++;
-//                        std::cout <<"Readling"<<std::endl;
-//                        std::cout <<"Value "<<bufferDDR[iter]<<std::endl;
-//                        std::cout <<"BANK, Depth"<<partialBankInputCMinor + partialBankInputH + partialBankInputW<<" "
-//                                 <<partialDepthInputCMinor + partialDepthInputH + partialDepthInputW<<std::endl;
-                    }
+                     }
                 }
+             }
+
+//                //Write data from DDR to the on-chip memory
+//                CONVLAYER_LOADBROACASTBUFFER_FOR_LOAD_PACKET:
+//                for (unsigned int iter=0; iter<lengthInputPacket; iter++)
+//                {
+//                    if (iterInputW + iter < inputWMax)
+//                    {
+//                        partialDepthInputW = ( (iterInputW + iter+ pad) >> EXP_TILE_INPUT_CONV_X);
+//                        partialBankInputW = ( (iterInputW + iter + pad) & MASK_TILE_INPUT_CONV_X);
+
+//                        bufferBroadcast[partialBankInputCMinor + partialBankInputH + partialBankInputW]
+//                                [partialDepthInputCMinor + partialDepthInputH + partialDepthInputW]
+//                                = (t_conv) bufferDDR[iter];
+//                        iterMemInput++;
+////                        std::cout <<"Readling"<<std::endl;
+////                        std::cout <<"Value "<<bufferDDR[iter]<<std::endl;
+////                        std::cout <<"BANK, Depth"<<partialBankInputCMinor + partialBankInputH + partialBankInputW<<" "
+////                                 <<partialDepthInputCMinor + partialDepthInputH + partialDepthInputW<<std::endl;
+//                    }
+//                }
 
             }
         }
-    }
+
 }
 
 void convLayer_OffloadOutputBuffer (
         float * memOutput, //global memory pointer to the start of outputs
-		const t_conv (&bufferOutput) [NUM_TILE_OUTPUT][NUM_DEPTH_OUTPUT], //Array of on-chip buffer storing partial sums
+        const t_conv (&bufferOutput) [NUM_OUTPUT_Z][NUM_OUTPUT_Y][NUM_OUTPUT_X], //Array of on-chip buffer storing partial sums
 
         const unsigned int outputKMax,   //Output number of filters
         const unsigned int outputMMax,  //Output height
@@ -389,12 +407,12 @@ void convLayer_OffloadOutputBuffer (
     const unsigned int packetLength = PORT_WIDTH_BYTE / SIZE_OF_FLOAT;
 
     //Partial  Indices
-    unsigned int partialBankK;
-    unsigned int partialBankM;
-    unsigned int partialBankN;
-    unsigned int partialDepthK;
-    unsigned int partialDepthM;
-    unsigned int partialDepthN;
+//    unsigned int partialBankK;
+//    unsigned int partialBankM;
+//    unsigned int partialBankN;
+//    unsigned int partialDepthK;
+//    unsigned int partialDepthM;
+//    unsigned int partialDepthN;
 
     //Partial offset relative to the start of output in global memory due to K
     unsigned int partialOffsetK = outputKOffset*outputMMax*outputNMax;
@@ -410,18 +428,18 @@ void convLayer_OffloadOutputBuffer (
     for (unsigned int iterOutputK = outputKOffset, iterOutputKMinor = 0;
          iterOutputK < actualOutputKMax; iterOutputK++, iterOutputKMinor++ )
     {
-        partialBankK = (iterOutputKMinor & MASK_TILE_OUTPUT_CONV_Z)
-                << (EXP_TILE_OUTPUT_CONV_X + EXP_TILE_OUTPUT_CONV_Y);
-        partialDepthK = (iterOutputKMinor >> EXP_TILE_INPUT_CONV_Z)
-                << (EXP_DEPTH_OUTPUT_CONV_X + EXP_DEPTH_OUTPUT_CONV_Y);
+//        partialBankK = (iterOutputKMinor & MASK_TILE_OUTPUT_CONV_Z)
+//                << (EXP_TILE_OUTPUT_CONV_X + EXP_TILE_OUTPUT_CONV_Y);
+//        partialDepthK = (iterOutputKMinor >> EXP_TILE_INPUT_CONV_Z)
+//                << (EXP_DEPTH_OUTPUT_CONV_X + EXP_DEPTH_OUTPUT_CONV_Y);
 
         CONVLAYER_OFFLOADRESULT_FOR_M:
         for (unsigned int iterOutputM = 0; iterOutputM < outputMMax; iterOutputM++)
         {
-            partialBankM = (iterOutputM & MASK_TILE_OUTPUT_CONV_Y)
-                    << (EXP_TILE_OUTPUT_CONV_X);
-            partialDepthM = (iterOutputM >> EXP_TILE_OUTPUT_CONV_Y)
-                    << (EXP_DEPTH_OUTPUT_CONV_X);
+//            partialBankM = (iterOutputM & MASK_TILE_OUTPUT_CONV_Y)
+//                    << (EXP_TILE_OUTPUT_CONV_X);
+//            partialDepthM = (iterOutputM >> EXP_TILE_OUTPUT_CONV_Y)
+//                    << (EXP_DEPTH_OUTPUT_CONV_X);
 
             CONVLAYER_OFFLOADRESULT_FOR_N:
             for (unsigned int iterOutputN = 0; iterOutputN < outputNMax; iterOutputN += packetLength)
@@ -432,13 +450,14 @@ void convLayer_OffloadOutputBuffer (
                     unsigned int actualIterOutputN = iterOutputN + iter;
                     if (actualIterOutputN < outputNMax)
                     {
-                        partialBankN = (actualIterOutputN & MASK_TILE_OUTPUT_CONV_X);
-                        partialDepthN = actualIterOutputN >> EXP_TILE_OUTPUT_CONV_X;
+//                        partialBankN = (actualIterOutputN & MASK_TILE_OUTPUT_CONV_X);
+//                        partialDepthN = actualIterOutputN >> EXP_TILE_OUTPUT_CONV_X;
                         if (useReLu)
                         {
                             writeBuffer[iter] =
-                                    std::max ((float)0.0f, (float) bufferOutput[partialBankK+partialBankM+partialBankN]
-                                    [partialDepthK+partialDepthM+partialDepthN]);
+                                    std::max ((float)0.0f, (float) bufferOutput[iterOutputKMinor][iterOutputM][actualIterOutputN]);
+                            //writeBuffer[iter] = partialOffsetK+memCounter+iter;
+                                    //
 //                            std::cout <<"Writing"<<std::endl;
 //                            std::cout <<"Value "<<writeBuffer[iter]<<std::endl;
 //                            std::cout <<"BANK, Depth"<<partialBankK+partialBankM+partialBankN<<" "
@@ -447,26 +466,40 @@ void convLayer_OffloadOutputBuffer (
                         else
                         {
                             writeBuffer[iter] =
-                                   (float) bufferOutput[partialBankK+partialBankM+partialBankN]
-                                    [partialDepthK+partialDepthM+partialDepthN];
+                                   (float) bufferOutput[iterOutputKMinor][iterOutputM][actualIterOutputN];
 //                            std::cout <<"Writing"<<std::endl;
 //                            std::cout <<"Value "<<(float) bufferOutput[partialBankK+partialBankM+partialBankN]
 //                                        [partialDepthK+partialDepthM+partialDepthN] <<std::endl;
 //                            std::cout <<"BANK, Depth"<<partialBankK+partialBankM+partialBankN<<" "
 //                                     <<partialDepthK+partialDepthM+partialDepthN<<std::endl;
-
-
                         }
                     }
                 }
-                for (unsigned int iter=0; iter < packetLength; iter++)
-				{
-                	if (iter+iterOutputN < outputNMax)
-                	{
-                		*(memOutput+partialOffsetK+memCounter) = writeBuffer[iter];
-                		memCounter++;
-                	}
-				}
+//                for (unsigned int iter=0; iter < packetLength; iter++)
+//				{
+//                	if (iter+iterOutputN < outputNMax)
+//                	{
+//                		*(memOutput+partialOffsetK+memCounter) = writeBuffer[iter];
+//                		memCounter++;
+//                	}
+//				}
+                if (iterOutputN < outputNMax - packetLength)
+                {
+                    memcpy((float *)(memOutput+partialOffsetK+memCounter), (float *)&writeBuffer[0], PORT_WIDTH_BYTE);
+                    memCounter += packetLength;
+                }
+                else
+                {
+                    convLayer_OffloadOutputBuffer_label0:
+					for (unsigned int iter=0; iter<packetLength; iter++)
+                    {
+                        if (iter + iterOutputN < outputNMax)
+                        {
+                             *(memOutput+partialOffsetK+memCounter) = writeBuffer[iter];
+                                memCounter++;
+                        }
+                     }
+                }
             }
         }
     }
@@ -495,6 +528,10 @@ void convLayer_LoadWeights (
     const unsigned int partialOffsetBufferC = NUM_PARALLEL_Y*NUM_PARALLEL_X;
     const unsigned int partialOffsetBufferR = NUM_PARALLEL_X;
 
+#pragma HLS RESOURCE variable=partialOffsetWeightK core=Mul_LUT
+#pragma HLS RESOURCE variable=partialOffsetWeightC core=Mul_LUT
+#pragma HLS RESOURCE variable=partialOffsetBufferC core=Mul_LUT
+
     CONVLAYER_LOADWEIGHTS_FOR_PARALLEL_K:
     for (unsigned int iterBufferK=0, partialIndexWeightK=weightKOffset*partialOffsetWeightK;
          iterBufferK < NUM_PARALLEL_K;
@@ -519,17 +556,18 @@ void convLayer_LoadWeights (
                 	memcpy((float *)&bufferDDR[0], (float *)(memInput+partialIndexWeightK+partialIndexWeightC+partialIndexWeightR+partialIndexWeightS),
                             PORT_WIDTH_BYTE);
 
-                    for (unsigned int iter=0; iter<packetLength; iter++)
+                    convLayer_LoadWeights_label1:
+					for (unsigned int iter=0; iter<packetLength; iter++)
                     {
                         if (iter+partialIndexBufferS < weightSMax && iterBufferR < weightRMax && iterBufferC+weightCOffset < weightCMax
                                 && iterBufferK+weightKOffset < weightKMax)
                         {
-                            bufferWeights[iterBufferK][partialIndexBufferS+partialIndexBufferR+partialIndexBufferC]
+                            bufferWeights[iterBufferK][iter+partialIndexBufferS+partialIndexBufferR+partialIndexBufferC]
                                     = (t_conv)bufferDDR[iter];
                         }
                         else if (iter+partialIndexBufferS < NUM_PARALLEL_X)
                         {
-                            bufferWeights[iterBufferK][partialIndexBufferS+partialIndexBufferR+partialIndexBufferC]
+                            bufferWeights[iterBufferK][iter+partialIndexBufferS+partialIndexBufferR+partialIndexBufferC]
                                     = (t_conv)0;
                         }
                     }
@@ -543,7 +581,7 @@ void convLayer_WrapperLoadWeightsAndInputs(
         const float * mem, //global memory pointer
         const unsigned int memoryWeightoffset, //Starting FLOAT index of weights relative to mem
         const unsigned int memoryInputoffset, //starting FLOAD index of inputs relative to mem
-        t_conv (&bufferBroadcast)[NUM_TILE_BROADCAST][NUM_DEPTH_BROADCAST], //Array of on-chip buffer storing inputs
+        t_conv (&bufferBroadcast)[NUM_INPUT_Z][NUM_INPUT_Y][NUM_INPUT_X], //Array of on-chip buffer storing inputs
         t_conv (&bufferWeights)[NUM_PARALLEL_K][NUM_PARALLEL_ONE_KERNEL], //weight buffer
 
         const unsigned int inputCMax,           // input dimensions
@@ -582,7 +620,7 @@ void convLayer_WrapperLoadWeightsAndInputs(
 }
 void convLayer_PrepareOutputBuffer (
         const float * &memInput, //pointer to the start of biases
-		t_conv (&bufferOutput) [NUM_TILE_OUTPUT][NUM_DEPTH_OUTPUT], //Array of on-chip buffer storing partial sums
+        t_conv (&bufferOutput) [NUM_OUTPUT_Z][NUM_OUTPUT_Y][NUM_OUTPUT_X], //Array of on-chip buffer storing partial sums
 
         const unsigned int outputKMax,   //Output number of filters
         const unsigned int outputMMax,  //Output height
@@ -591,50 +629,50 @@ void convLayer_PrepareOutputBuffer (
         )
 {
 #pragma HLS INLINE
-    unsigned int partialBankOutputK;
-    unsigned int partialBankOutputM;
-     unsigned int partialBankOutputN;
+//    unsigned int partialBankOutputK;
+//    unsigned int partialBankOutputM;
+//     unsigned int partialBankOutputN;
 
-     unsigned int partialDepthOutputK;
-     unsigned int partialDepthOutputM;
-     unsigned int partialDepthOutputN;
+//     unsigned int partialDepthOutputK;
+//     unsigned int partialDepthOutputM;
+//     unsigned int partialDepthOutputN;
 
     CONVLAYER_PREPAREOUTPUT_FOR_K:
     for (unsigned int iterInputKMinor = 0, iterInputK = outputKOffset;
-         iterInputKMinor < NUM_TILE_INPUT_CONV_Z && iterInputK < outputKMax;
+         iterInputKMinor < NUM_OUTPUT_Z && iterInputK < outputKMax;
          iterInputKMinor++, iterInputK++)
     {
         t_conv bias = (t_conv) *(memInput+iterInputK);
 
-        partialBankOutputK = (iterInputKMinor & MASK_TILE_OUTPUT_CONV_Z)
-                << (EXP_TILE_OUTPUT_CONV_X + EXP_TILE_OUTPUT_CONV_Y);
-        partialDepthOutputK = (iterInputKMinor >> EXP_TILE_OUTPUT_CONV_Z)
-                << (EXP_DEPTH_OUTPUT_CONV_X+EXP_DEPTH_OUTPUT_CONV_Y);
+//        partialBankOutputK = (iterInputKMinor & MASK_TILE_OUTPUT_CONV_Z)
+//                << (EXP_TILE_OUTPUT_CONV_X + EXP_TILE_OUTPUT_CONV_Y);
+//        partialDepthOutputK = (iterInputKMinor >> EXP_TILE_OUTPUT_CONV_Z)
+//                << (EXP_DEPTH_OUTPUT_CONV_X+EXP_DEPTH_OUTPUT_CONV_Y);
 
         CONVLAYER_PREPAREOUTPUT_FOR_M:
         for (unsigned int iterM = 0; iterM < outputMMax; iterM++)
         {
-            partialBankOutputM = (iterM & MASK_TILE_OUTPUT_CONV_Y)
-                    << (EXP_TILE_OUTPUT_CONV_X);
-            partialDepthOutputM = (iterM >> EXP_TILE_OUTPUT_CONV_Y)
-                    << (EXP_DEPTH_OUTPUT_CONV_X);
+//            partialBankOutputM = (iterM & MASK_TILE_OUTPUT_CONV_Y)
+//                    << (EXP_TILE_OUTPUT_CONV_X);
+//            partialDepthOutputM = (iterM >> EXP_TILE_OUTPUT_CONV_Y)
+//                    << (EXP_DEPTH_OUTPUT_CONV_X);
             CONVLAYER_PREPAREOUTPUT_FOR_N:
             for (unsigned int iterN = 0; iterN < outputNMax; iterN++)
             {
-                partialBankOutputN = (iterN & MASK_TILE_OUTPUT_CONV_X);
-                partialDepthOutputN = (iterN >> EXP_TILE_INPUT_CONV_X);
-                bufferOutput[partialBankOutputK+partialBankOutputM+partialBankOutputN]
-                        [partialDepthOutputK+partialDepthOutputM+partialDepthOutputN]
+//                partialBankOutputN = (iterN & MASK_TILE_OUTPUT_CONV_X);
+//                partialDepthOutputN = (iterN >> EXP_TILE_INPUT_CONV_X);
+                bufferOutput[iterInputKMinor][iterM][iterN]
                         = bias;
+//                 bufferOutput[iterInputKMinor][iterM][iterN] = iterInputK*outputMMax*outputNMax + iterM*outputNMax + iterN;
             }
         }
     }
 }
 
 void convLayer_ComputePartialSum (
-        const t_conv (&bufferBroadcast)[NUM_TILE_BROADCAST][NUM_DEPTH_BROADCAST], //Array of on-chip buffer storing inputs
+        const t_conv (&bufferBroadcast)[NUM_INPUT_Z][NUM_INPUT_Y][NUM_INPUT_X], //Array of on-chip buffer storing inputs
         const t_conv (&bufferWeights)[NUM_PARALLEL_K][NUM_PARALLEL_ONE_KERNEL], //weight buffer
-        t_conv (&bufferOutput) [NUM_TILE_OUTPUT][NUM_DEPTH_BROADCAST], //Array of on-chip buffer storing partial sums
+        t_conv (&bufferOutput) [NUM_OUTPUT_Z][NUM_OUTPUT_Y][NUM_OUTPUT_X], //Array of on-chip buffer storing partial sums
 
         const unsigned int outputMMax,  //Output height
         const unsigned int outputNMax, //output width
@@ -652,30 +690,30 @@ void convLayer_ComputePartialSum (
     t_conv bufferInputCompute [NUM_PARALLEL_ONE_KERNEL];
     t_conv bufferOutputCompute [NUM_PARALLEL_K];
 
-    unsigned int partialBankC;
-    unsigned int partialBankH;
-    unsigned int partialBankW;
-    unsigned int partialDepthC;
-    unsigned int partialDepthH;
-    unsigned int partialDepthW;
+//    unsigned int partialBankC;
+//    unsigned int partialBankH;
+//    unsigned int partialBankW;
+//    unsigned int partialDepthC;
+//    unsigned int partialDepthH;
+//    unsigned int partialDepthW;
 
-    unsigned int partialBankK;
-    unsigned int partialBankM;
-    unsigned int partialBankN;
-    unsigned int partialDepthK;
-    unsigned int partialDepthM;
-    unsigned int partialDepthN;
+//    unsigned int partialBankK;
+//    unsigned int partialBankM;
+//    unsigned int partialBankN;
+//    unsigned int partialDepthK;
+//    unsigned int partialDepthM;
+//    unsigned int partialDepthN;
 
     CONVLAYER_COMPUTE_FOR_M:
     for (unsigned int iterM=0, iterH=0; iterM < outputMMax; iterM++, iterH+=stride)
     {
-        partialBankM = (iterM & MASK_TILE_OUTPUT_CONV_Y) << (EXP_TILE_OUTPUT_CONV_X);
-        partialDepthM = (iterM >> EXP_TILE_OUTPUT_CONV_Y) << (EXP_DEPTH_OUTPUT_CONV_X);
+//        partialBankM = (iterM & MASK_TILE_OUTPUT_CONV_Y) << (EXP_TILE_OUTPUT_CONV_X);
+//        partialDepthM = (iterM >> EXP_TILE_OUTPUT_CONV_Y) << (EXP_DEPTH_OUTPUT_CONV_X);
         CONVLAYER_COMPUTE_FOR_N:
         for (unsigned int iterN=0, iterW=0; iterN < outputNMax; iterN++, iterW+=stride)
         {
-            partialBankN = (iterM & MASK_TILE_OUTPUT_CONV_X);
-            partialDepthN = (iterM >> EXP_TILE_OUTPUT_CONV_X);
+//            partialBankN = (iterM & MASK_TILE_OUTPUT_CONV_X);
+//            partialDepthN = (iterM >> EXP_TILE_OUTPUT_CONV_X);
             unsigned int bufferInputIndex = 0;
             unsigned int bufferOutputIndex = 0;
             //Fetch inputs
@@ -684,29 +722,28 @@ void convLayer_ComputePartialSum (
                  iterC < NUM_PARALLEL_C;
                  iterC++)
             {
-                partialDepthC = (iterC >> EXP_TILE_INPUT_CONV_Z)
-                        << (EXP_DEPTH_INPUT_CONV_X + EXP_DEPTH_INPUT_CONV_Y);
-                partialBankC = (iterC & MASK_TILE_INPUT_CONV_Z)
-                        << (EXP_TILE_INPUT_CONV_X + EXP_TILE_INPUT_CONV_Y);
+//                partialDepthC = (iterC >> EXP_TILE_INPUT_CONV_Z)
+//                        << (EXP_DEPTH_INPUT_CONV_X + EXP_DEPTH_INPUT_CONV_Y);
+//                partialBankC = (iterC & MASK_TILE_INPUT_CONV_Z)
+//                        << (EXP_TILE_INPUT_CONV_X + EXP_TILE_INPUT_CONV_Y);
 
                 CONVLAYER_COMPUTE_FOR_INPUTBUFFER_R:
                 for (unsigned int iterR=0; iterR < NUM_PARALLEL_Y; iterR++)
                 {
-                    partialDepthH = ( (iterR+iterH) >> EXP_TILE_INPUT_CONV_Y)
-                            << (EXP_DEPTH_INPUT_CONV_X);
-                    partialBankH = ( (iterR+iterH) & MASK_TILE_INPUT_CONV_Y)
-                            << (EXP_TILE_INPUT_CONV_X);
+//                    partialDepthH = ( (iterR+iterH) >> EXP_TILE_INPUT_CONV_Y)
+//                            << (EXP_DEPTH_INPUT_CONV_X);
+//                    partialBankH = ( (iterR+iterH) & MASK_TILE_INPUT_CONV_Y)
+//                            << (EXP_TILE_INPUT_CONV_X);
                     CONVLAYER_COMPUTE_FOR_INPUTBUFFER_S:
                     for (unsigned int iterS=0; iterS < NUM_PARALLEL_X; iterS++)
                     {
-                        partialDepthW = ( (iterS+iterW) >> EXP_TILE_INPUT_CONV_X);
-                        partialBankW = ( (iterS+iterW) & MASK_TILE_INPUT_CONV_X);
+//                        partialDepthW = ( (iterS+iterW) >> EXP_TILE_INPUT_CONV_X);
+//                        partialBankW = ( (iterS+iterW) & MASK_TILE_INPUT_CONV_X);
 
                         if (iterS < weightSMax && iterR < weightRMax && iterC+weightCOffset < weightCMax)
                         {
                             bufferInputCompute[bufferInputIndex]
-                                    = bufferBroadcast[partialBankC+partialBankW+partialBankH]
-                                    [partialDepthC+partialDepthH+partialDepthW];
+                                    = bufferBroadcast[iterC][iterR+iterH][iterS+iterW];
                         }
                         else
                         {
@@ -722,15 +759,14 @@ void convLayer_ComputePartialSum (
             CONVLAYER_COMPUTE_FOR_OUTPUTBUFFER_K:
             for (unsigned int iterK=0; iterK < NUM_PARALLEL_K; iterK++)
             {
-                partialDepthK = (iterK >> EXP_TILE_OUTPUT_CONV_Z)
-                        << (EXP_DEPTH_OUTPUT_CONV_X + EXP_DEPTH_OUTPUT_CONV_Y);
-                partialBankK = (iterK & MASK_TILE_OUTPUT_CONV_Z)
-                        << (EXP_TILE_OUTPUT_CONV_X + EXP_TILE_OUTPUT_CONV_Y);
+//                partialDepthK = (iterK >> EXP_TILE_OUTPUT_CONV_Z)
+//                        << (EXP_DEPTH_OUTPUT_CONV_X + EXP_DEPTH_OUTPUT_CONV_Y);
+//                partialBankK = (iterK & MASK_TILE_OUTPUT_CONV_Z)
+//                        << (EXP_TILE_OUTPUT_CONV_X + EXP_TILE_OUTPUT_CONV_Y);
                 if (iterK+weightKOffset<weightKMax)
                 {
                     bufferOutputCompute[bufferOutputIndex]
-                            = bufferOutput[partialBankK+partialBankM+partialBankN]
-                            [partialDepthK+partialDepthM+partialDepthN];
+                            = bufferOutput[iterK][iterM][iterN];
                 }
                 else
                 {
@@ -747,14 +783,14 @@ void convLayer_ComputePartialSum (
             CONVLAYER_COMPUTE_FOR_OFFLOAD_K:
             for (unsigned int iterK=0; iterK < NUM_PARALLEL_K; iterK++)
             {
-                partialDepthK = (iterK >> EXP_TILE_OUTPUT_CONV_Z)
-                        << (EXP_DEPTH_OUTPUT_CONV_X + EXP_DEPTH_OUTPUT_CONV_Y);
-                partialBankK = (iterK & MASK_TILE_OUTPUT_CONV_Z)
-                        << (EXP_TILE_OUTPUT_CONV_X + EXP_TILE_OUTPUT_CONV_Y);
+//                partialDepthK = (iterK >> EXP_TILE_OUTPUT_CONV_Z)
+//                        << (EXP_DEPTH_OUTPUT_CONV_X + EXP_DEPTH_OUTPUT_CONV_Y);
+//                partialBankK = (iterK & MASK_TILE_OUTPUT_CONV_Z)
+//                        << (EXP_TILE_OUTPUT_CONV_X + EXP_TILE_OUTPUT_CONV_Y);
                 if (iterK+weightKOffset<weightKMax)
                 {
-                     bufferOutput[partialBankK+partialBankM+partialBankN]
-                         [partialDepthK+partialDepthM+partialDepthN] = bufferOutputCompute[bufferOutputIndex];
+                     bufferOutput[iterK]
+                         [iterM][iterN] = bufferOutputCompute[bufferOutputIndex];
                 }
                 bufferOutputIndex++;
             }

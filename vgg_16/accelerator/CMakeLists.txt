@@ -8,3 +8,4 @@ add_library(${PROJECT_NAME} ${SRC_FILES})
 target_link_libraries(${PROJECT_NAME})
 
 add_subdirectory(test) #directory for test executable
+add_subdirectory(simple_test) #directory for simple test executable

@@ -84,9 +84,9 @@ int run_single_test(string imageDir, map<string, int> layer_params, float * &dma
     layerType type = CONVLayer;
     accelerator(
                 dma_input,
-                0,
+                sizeof(float)*(num_biases + num_weights),
                 sizeof(float)*(b*num_inputs+num_biases + num_weights),
-                sizeof(float)*(b*num_inputs),
+                0,
                 b,
                 true,
 
@@ -99,7 +99,7 @@ int run_single_test(string imageDir, map<string, int> layer_params, float * &dma
                 ix,
                 iy,s,
                 k,
-                pad
+                0    //only for the first layer, because the input is already padded.
                 );
     #endif
 

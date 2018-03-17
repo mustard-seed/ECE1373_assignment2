@@ -36,15 +36,16 @@
 /* On-chip broadcast buffer parameters */
 #define EXP_TILE_INPUT_CONV_X 2  //2^2 = 4
 #define EXP_TILE_INPUT_CONV_Y 2  //2^2 = 4
-#define EXP_TILE_INPUT_CONV_Z 3 //2^3 = 8
+#define EXP_TILE_INPUT_CONV_Z 2 //2^3 = 4
 #define MASK_TILE_INPUT_CONV_X 0x3
 #define MASK_TILE_INPUT_CONV_Y 0x3
-#define MASK_TILE_INPUT_CONV_Z 0x7
+#define MASK_TILE_INPUT_CONV_Z 0x3
 #define NUM_TILE_INPUT_CONV_X (0X1 << EXP_TILE_INPUT_CONV_X) //2^2 = 4
 #define NUM_TILE_INPUT_CONV_Y (0X1 << EXP_TILE_INPUT_CONV_Y) //2^2 = 4
-#define NUM_TILE_INPUT_CONV_Z (0X1 << EXP_TILE_INPUT_CONV_Z) //2^3 = 8
+#define NUM_TILE_INPUT_CONV_Z (0X1 << EXP_TILE_INPUT_CONV_Z) //2^2 = 4
 
-#define NUM_TILE_BROADCAST 128 //2^(2+2+2)
+
+#define NUM_TILE_BROADCAST 64 //2^(2+2+2)
 #define EXP_DEPTH_INPUT_CONV_X 6
 #define EXP_DEPTH_INPUT_CONV_Y 6
 #define EXP_DEPTH_INPUT_CONV_Z 0
@@ -53,6 +54,10 @@
 #define NUM_DEPTH_INPUT_CONV_Z (0X1 << EXP_DEPTH_INPUT_CONV_Z)
 
 #define NUM_DEPTH_BROADCAST NUM_DEPTH_INPUT_CONV_X*NUM_DEPTH_INPUT_CONV_Y*NUM_DEPTH_INPUT_CONV_Z
+
+#define NUM_INPUT_X 256
+#define NUM_INPUT_Y 256
+#define NUM_INPUT_Z 4
 
 /* On-chip output buffer parameters */
 /* On-chip broadcast buffer parameters */
@@ -76,11 +81,15 @@
 
 #define NUM_DEPTH_OUTPUT NUM_DEPTH_OUTPUT_CONV_X*NUM_DEPTH_OUTPUT_CONV_Y*NUM_DEPTH_OUTPUT_CONV_Z
 
+#define NUM_OUTPUT_X 256
+#define NUM_OUTPUT_Y 256
+#define NUM_OUTPUT_Z 8
+
 /* On-chip weights buffer, computation buffer, and parallelization parameters
 For VGG-16 ONLY!!!!*/
 #define NUM_PARALLEL_X 3
 #define NUM_PARALLEL_Y 3
-#define NUM_PARALLEL_C 8
+#define NUM_PARALLEL_C 4
 #define NUM_PARALLEL_K 8
 #define NUM_PARALLEL_ONE_KERNEL (NUM_PARALLEL_C*NUM_PARALLEL_Y*NUM_PARALLEL_X)
 

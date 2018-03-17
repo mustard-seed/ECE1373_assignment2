@@ -303,13 +303,19 @@ float get_mean_squared_error_and_write_file(vector<float *> mem, vector <float *
     	outputs = mem[i] + b*num_inputs;
 
     }
+    unsigned errorCount = 0;
     for (int j = 0; j < b*num_outputs; j++)
     {
       float err = fabs(outputs[j] - golden_output[i][j]);
       total += err*err;
-      if (golden_output[i][j] < 0.0f)
+      if (golden_output[i][j] <= 0.0f)
       {
           totalNegativeGolden++;
+      }
+      if (j < 1024)
+      {
+          std::cout <<"@ "<<j<<" Result, golden: "<<outputs[j]<<" "<<golden_output[i][j]<<std::endl;
+          //errorCount++;
       }
     }
     ss.str("");

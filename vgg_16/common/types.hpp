@@ -9,9 +9,9 @@
 
 #include "ap_fixed.h"
 
-typedef ap_fixed<18, 8, AP_RND_CONV, AP_SAT> t_conv;
-typedef ap_fixed<18, 8, AP_RND_CONV, AP_SAT> t_fc;
-typedef ap_fixed<18, 8, AP_RND_CONV, AP_SAT> t_pool;
+typedef ap_fixed<24, 10, AP_RND_CONV, AP_SAT> t_conv;
+typedef ap_fixed<24, 10, AP_RND_CONV, AP_SAT> t_fc;
+typedef ap_fixed<24, 10, AP_RND_CONV, AP_SAT> t_pool;
 
 #else
 typedef float t_conv;

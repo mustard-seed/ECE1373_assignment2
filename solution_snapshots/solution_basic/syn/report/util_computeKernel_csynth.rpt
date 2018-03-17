@@ -3,7 +3,7 @@
 ================================================================
 == Vivado HLS Report for 'util_computeKernel'
 ================================================================
-* Date:           Thu Mar 15 23:11:10 2018
+* Date:           Fri Mar 16 20:43:56 2018
 
 * Version:        2017.2 (Build 1909853 on Thu Jun 15 18:55:24 MDT 2017)
 * Project:        accelerator
@@ -20,7 +20,7 @@
     +--------+-------+----------+------------+
     |  Clock | Target| Estimated| Uncertainty|
     +--------+-------+----------+------------+
-    |ap_clk  |   5.00|      3.99|        0.62|
+    |ap_clk  |   5.00|      4.08|        0.62|
     +--------+-------+----------+------------+
 
 + Latency (clock cycles): 
@@ -29,7 +29,7 @@
     |   Latency   |   Interval  | Pipeline|
     |  min |  max |  min |  max |   Type  |
     +------+------+------+------+---------+
-    |  2321|  2321|  2321|  2321|   none  |
+    |  1169|  1169|  1169|  1169|   none  |
     +------+------+------+------+---------+
 
     + Detail: 
@@ -41,8 +41,8 @@
         |                            |   Latency   | Iteration|  Initiation Interval  | Trip |          |
         |          Loop Name         |  min |  max |  Latency |  achieved |   target  | Count| Pipelined|
         +----------------------------+------+------+----------+-----------+-----------+------+----------+
-        |- COMPUTE_FOR_OUTPUT        |  2320|  2320|       290|          -|          -|     8|    no    |
-        | + COMPUTE_FOR_DOT_PRODUCT  |   288|   288|         4|          -|          -|    72|    no    |
+        |- COMPUTE_FOR_OUTPUT        |  1168|  1168|       146|          -|          -|     8|    no    |
+        | + COMPUTE_FOR_DOT_PRODUCT  |   144|   144|         4|          -|          -|    36|    no    |
         +----------------------------+------+------+----------+-----------+-----------+------+----------+
 
 
@@ -54,15 +54,15 @@
 +-----------------+---------+-------+---------+--------+
 |       Name      | BRAM_18K| DSP48E|    FF   |   LUT  |
 +-----------------+---------+-------+---------+--------+
-|DSP              |        -|      1|        -|       -|
-|Expression       |        -|      -|      291|     241|
+|DSP              |        -|      -|        -|       -|
+|Expression       |        -|      2|      336|     323|
 |FIFO             |        -|      -|        -|       -|
 |Instance         |        -|      -|        -|       -|
 |Memory           |        -|      -|        -|       -|
 |Multiplexer      |        -|      -|        -|      51|
-|Register         |        -|      -|      120|       -|
+|Register         |        -|      -|      122|       -|
 +-----------------+---------+-------+---------+--------+
-|Total            |        0|      1|      411|     292|
+|Total            |        0|      2|      458|     374|
 +-----------------+---------+-------+---------+--------+
 |Available        |     3456|    768|  1075200|  537600|
 +-----------------+---------+-------+---------+--------+
@@ -74,11 +74,7 @@
     N/A
 
     * DSP48: 
-    +-------------------------+----------------------+-----------+
-    |         Instance        |        Module        | Expression|
-    +-------------------------+----------------------+-----------+
-    |accelerator_mul_mbkb_U1  |accelerator_mul_mbkb  |  i0 * i1  |
-    +-------------------------+----------------------+-----------+
+    N/A
 
     * Memory: 
     N/A
@@ -90,43 +86,44 @@
     +--------------------------------+----------+-------+-----+----+------------+------------+
     |          Variable Name         | Operation| DSP48E|  FF | LUT| Bitwidth P0| Bitwidth P1|
     +--------------------------------+----------+-------+-----+----+------------+------------+
-    |iterDotProduct_1_fu_196_p2      |     +    |      0|   26|  13|           7|           1|
-    |iterOutput_1_fu_149_p2          |     +    |      0|   17|  10|           4|           1|
-    |p_Val2_2_fu_242_p2              |     +    |      0|  113|  42|          36|          36|
-    |p_Val2_4_fu_309_p2              |     +    |      0|   59|  24|          18|          18|
-    |tmp_13_fu_184_p2                |     +    |      0|   38|  17|          11|          11|
-    |tmp_14_fu_211_p2                |     +    |      0|   38|  17|          11|          11|
-    |brmerge40_demorgan_i_fu_439_p2  |    and   |      0|    0|   2|           1|           1|
-    |carry_fu_329_p2                 |    and   |      0|    0|   2|           1|           1|
-    |overflow_fu_433_p2              |    and   |      0|    0|   2|           1|           1|
-    |p_38_i_i_fu_409_p2              |    and   |      0|    0|   2|           1|           1|
-    |p_41_i_i_fu_395_p2              |    and   |      0|    0|   2|           1|           1|
-    |qb_assign_1_fu_299_p2           |    and   |      0|    0|   2|           1|           1|
-    |underflow_fu_457_p2             |    and   |      0|    0|   2|           1|           1|
-    |Range1_all_ones_fu_369_p2       |   icmp   |      0|    0|   4|           8|           2|
-    |Range1_all_zeros_fu_375_p2      |   icmp   |      0|    0|   4|           8|           1|
-    |Range2_all_ones_fu_353_p2       |   icmp   |      0|    0|   4|           7|           2|
-    |r_fu_272_p2                     |   icmp   |      0|    0|   5|           9|           1|
-    |tmp_2_fu_190_p2                 |   icmp   |      0|    0|   4|           7|           7|
-    |tmp_fu_143_p2                   |   icmp   |      0|    0|   2|           4|           5|
-    |brmerge_i_i_fu_421_p2           |    or    |      0|    0|   2|           1|           1|
-    |brmerge_i_i_i_fu_463_p2         |    or    |      0|    0|   2|           1|           1|
-    |r_i_i_i_fu_293_p2               |    or    |      0|    0|   2|           1|           1|
-    |tmp1_demorgan_fu_445_p2         |    or    |      0|    0|   2|           1|           1|
-    |tmp2_fu_469_p2                  |    or    |      0|    0|   2|           1|           1|
-    |underflow_not_fu_475_p2         |    or    |      0|    0|   2|           1|           1|
-    |deleted_ones_fu_401_p3          |  select  |      0|    0|   2|           1|           1|
-    |deleted_zeros_fu_381_p3         |  select  |      0|    0|   2|           1|           1|
-    |p_Val2_4_19_fu_489_p3           |  select  |      0|    0|  19|           1|          19|
-    |p_Val2_4_mux_fu_481_p3          |  select  |      0|    0|  18|           1|          17|
-    |partialOutputBuffer_s_d0        |  select  |      0|    0|  18|           1|          18|
-    |p_not_i_i_fu_415_p2             |    xor   |      0|    0|   2|           1|           2|
-    |tmp1_fu_451_p2                  |    xor   |      0|    0|   2|           1|           2|
-    |tmp_10_fu_427_p2                |    xor   |      0|    0|   2|           1|           2|
-    |tmp_7_fu_323_p2                 |    xor   |      0|    0|   2|           1|           2|
-    |tmp_s_fu_389_p2                 |    xor   |      0|    0|   2|           1|           2|
+    |p_Val2_1_fu_229_p2              |     *    |      2|    0|  45|          24|          24|
+    |iterDotProduct_1_fu_197_p2      |     +    |      0|   23|  12|           6|           1|
+    |iterOutput_1_fu_150_p2          |     +    |      0|   17|  10|           4|           1|
+    |p_Val2_2_fu_251_p2              |     +    |      0|  149|  54|          48|          48|
+    |p_Val2_4_fu_318_p2              |     +    |      0|   77|  30|          24|          24|
+    |tmp_13_fu_185_p2                |     +    |      0|   35|  16|          10|          10|
+    |tmp_14_fu_207_p2                |     +    |      0|   35|  16|          10|          10|
+    |brmerge40_demorgan_i_fu_448_p2  |    and   |      0|    0|   2|           1|           1|
+    |carry_fu_338_p2                 |    and   |      0|    0|   2|           1|           1|
+    |overflow_fu_442_p2              |    and   |      0|    0|   2|           1|           1|
+    |p_38_i_i_fu_418_p2              |    and   |      0|    0|   2|           1|           1|
+    |p_41_i_i_fu_404_p2              |    and   |      0|    0|   2|           1|           1|
+    |qb_assign_1_fu_308_p2           |    and   |      0|    0|   2|           1|           1|
+    |underflow_fu_466_p2             |    and   |      0|    0|   2|           1|           1|
+    |Range1_all_ones_fu_378_p2       |   icmp   |      0|    0|   5|          10|           2|
+    |Range1_all_zeros_fu_384_p2      |   icmp   |      0|    0|   5|          10|           1|
+    |Range2_all_ones_fu_362_p2       |   icmp   |      0|    0|   5|           9|           2|
+    |r_fu_281_p2                     |   icmp   |      0|    0|   7|          13|           1|
+    |tmp_2_fu_191_p2                 |   icmp   |      0|    0|   3|           6|           6|
+    |tmp_fu_144_p2                   |   icmp   |      0|    0|   2|           4|           5|
+    |brmerge_i_i_fu_430_p2           |    or    |      0|    0|   2|           1|           1|
+    |brmerge_i_i_i_fu_472_p2         |    or    |      0|    0|   2|           1|           1|
+    |r_i_i_i_fu_302_p2               |    or    |      0|    0|   2|           1|           1|
+    |tmp1_demorgan_fu_454_p2         |    or    |      0|    0|   2|           1|           1|
+    |tmp2_fu_478_p2                  |    or    |      0|    0|   2|           1|           1|
+    |underflow_not_fu_484_p2         |    or    |      0|    0|   2|           1|           1|
+    |deleted_ones_fu_410_p3          |  select  |      0|    0|   2|           1|           1|
+    |deleted_zeros_fu_390_p3         |  select  |      0|    0|   2|           1|           1|
+    |p_Val2_4_15_fu_498_p3           |  select  |      0|    0|  25|           1|          25|
+    |p_Val2_4_mux_fu_490_p3          |  select  |      0|    0|  24|           1|          23|
+    |partialOutputBuffer_s_d0        |  select  |      0|    0|  24|           1|          24|
+    |p_not_i_i_fu_424_p2             |    xor   |      0|    0|   2|           1|           2|
+    |tmp1_fu_460_p2                  |    xor   |      0|    0|   2|           1|           2|
+    |tmp_10_fu_436_p2                |    xor   |      0|    0|   2|           1|           2|
+    |tmp_7_fu_332_p2                 |    xor   |      0|    0|   2|           1|           2|
+    |tmp_s_fu_398_p2                 |    xor   |      0|    0|   2|           1|           2|
     +--------------------------------+----------+-------+-----+----+------------+------------+
-    |Total                           |          |      0|  291| 241|         153|         175|
+    |Total                           |          |      2|  336| 323|         201|         232|
     +--------------------------------+----------+-------+-----+----+------------+------------+
 
     * Multiplexer: 
@@ -134,10 +131,10 @@
     |          Name          | LUT| Input Size| Bits| Total Bits|
     +------------------------+----+-----------+-----+-----------+
     |ap_NS_fsm               |  33|          7|    1|          7|
-    |iterDotProduct_reg_132  |   9|          2|    7|         14|
+    |iterDotProduct_reg_132  |   9|          2|    6|         12|
     |iterOutput_reg_121      |   9|          2|    4|          8|
     +------------------------+----+-----------+-----+-----------+
-    |Total                   |  51|         11|   12|         29|
+    |Total                   |  51|         11|   11|         27|
     +------------------------+----+-----------+-----+-----------+
 
     * Register: 
@@ -145,18 +142,17 @@
     |              Name             | FF | LUT| Bits| Const Bits|
     +-------------------------------+----+----+-----+-----------+
     |ap_CS_fsm                      |   6|   0|    6|          0|
-    |computeCache_V_load_reg_549    |  18|   0|   18|          0|
-    |computeStream_V_load_reg_554   |  18|   0|   18|          0|
-    |iterDotProduct_1_reg_534       |   7|   0|    7|          0|
-    |iterDotProduct_reg_132         |   7|   0|    7|          0|
-    |iterOutput_1_reg_516           |   4|   0|    4|          0|
+    |computeCache_V_load_reg_546    |  24|   0|   24|          0|
+    |iterDotProduct_1_reg_536       |   6|   0|    6|          0|
+    |iterDotProduct_reg_132         |   6|   0|    6|          0|
+    |iterOutput_1_reg_518           |   4|   0|    4|          0|
     |iterOutput_reg_121             |   4|   0|    4|          0|
-    |p_Val2_1_reg_559               |  36|   0|   36|          0|
-    |partialOutputBuffer_1_reg_526  |   3|   0|    3|          0|
-    |tmp_13_reg_521                 |   8|   0|   11|          3|
-    |tmp_17_reg_565                 |   9|   0|    9|          0|
+    |p_Val2_1_reg_556               |  48|   0|   48|          0|
+    |partialOutputBuffer_1_reg_528  |   3|   0|    3|          0|
+    |tmp_13_reg_523                 |   8|   0|   10|          2|
+    |tmp_17_reg_562                 |  13|   0|   13|          0|
     +-------------------------------+----+----+-----+-----------+
-    |Total                          | 120|   0|  123|          3|
+    |Total                          | 122|   0|  124|          2|
     +-------------------------------+----+----+-----+-----------+
 
 
@@ -177,13 +173,13 @@
 |partialOutputBuffer_s_address0  | out |    3|  ap_memory | partialOutputBuffer_s |     array    |
 |partialOutputBuffer_s_ce0       | out |    1|  ap_memory | partialOutputBuffer_s |     array    |
 |partialOutputBuffer_s_we0       | out |    1|  ap_memory | partialOutputBuffer_s |     array    |
-|partialOutputBuffer_s_d0        | out |   18|  ap_memory | partialOutputBuffer_s |     array    |
-|partialOutputBuffer_s_q0        |  in |   18|  ap_memory | partialOutputBuffer_s |     array    |
-|computeCache_V_address0         | out |   10|  ap_memory |     computeCache_V    |     array    |
+|partialOutputBuffer_s_d0        | out |   24|  ap_memory | partialOutputBuffer_s |     array    |
+|partialOutputBuffer_s_q0        |  in |   24|  ap_memory | partialOutputBuffer_s |     array    |
+|computeCache_V_address0         | out |    9|  ap_memory |     computeCache_V    |     array    |
 |computeCache_V_ce0              | out |    1|  ap_memory |     computeCache_V    |     array    |
-|computeCache_V_q0               |  in |   18|  ap_memory |     computeCache_V    |     array    |
-|computeStream_V_address0        | out |    7|  ap_memory |    computeStream_V    |     array    |
+|computeCache_V_q0               |  in |   24|  ap_memory |     computeCache_V    |     array    |
+|computeStream_V_address0        | out |    6|  ap_memory |    computeStream_V    |     array    |
 |computeStream_V_ce0             | out |    1|  ap_memory |    computeStream_V    |     array    |
-|computeStream_V_q0              |  in |   18|  ap_memory |    computeStream_V    |     array    |
+|computeStream_V_q0              |  in |   24|  ap_memory |    computeStream_V    |     array    |
 +--------------------------------+-----+-----+------------+-----------------------+--------------+
 

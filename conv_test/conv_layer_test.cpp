@@ -89,8 +89,8 @@ int main()
 {
 
   string imageRootDir = "data/vgg_batches/batch_";
-  int numBatches = 10;
-  string layer = "conv1_1";
+  int numBatches = 1;
+  string layer = "conv5_3";
   string imageDir;
   ostringstream ss;
   float total_error = 0.0;
