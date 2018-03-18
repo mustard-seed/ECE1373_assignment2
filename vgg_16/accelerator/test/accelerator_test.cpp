@@ -26,7 +26,7 @@ using namespace std;
 
 #define PRINT
 
-int run_single_test(string imageDir, map<string, int> layer_params, float * &dma_input, float * gold_outputs){
+int run_single_test(string imageDir, map<string, int> layer_params, float * &dma_input, float * gold_outputs, bool runOnFPGA){
 
 
 
@@ -50,68 +50,99 @@ int run_single_test(string imageDir, map<string, int> layer_params, float * &dma
   {
     cerr << "Problem with layer params\n";
     return 1;
-  } else {
-    int b = layer_params["batch_size"];
-    int od = layer_params["output_dim"];
-    int ox = layer_params["output_width"];
-    int oy = layer_params["output_height"];
-    int id = layer_params["input_dim"];
-    int ix = layer_params["input_width"];
-    int iy = layer_params["input_height"];
-    int k = layer_params["kernel_size"];
-    int s = layer_params["stride"];
-    int pad = layer_params["pad"];
+      }
+  else {
+        int b = layer_params["batch_size"];
+        int od = layer_params["output_dim"];
+        int ox = layer_params["output_width"];
+        int oy = layer_params["output_height"];
+        int id = layer_params["input_dim"];
+        int ix = layer_params["input_width"];
+        int iy = layer_params["input_height"];
+        int k = layer_params["kernel_size"];
+        int s = layer_params["stride"];
+        int pad = layer_params["pad"];
 
-#ifdef PRINT
-    cout << "Begin Test\n"
-       << "Batch Size: " << b << endl
-       << "Num Inputs: " << num_inputs << endl
-       << "Num Outputs: " << num_outputs << endl
-       << "Num Weights: " << num_weights << endl
-       << "Num Biases: " << num_biases << endl
-       << "Input Dimensions " << b << " x " << id << " x " << ix << " x " << iy << endl
-       << "Output Dimensions " << b << " x " << od << " x " << ox << " x " << oy << endl
-       << "Kernel Dimensions " << od << " x " << id << " x " << k << " x " << k << endl
-       << "Stride Size: " << s << endl;
-#endif
-
-    // Run Accelerator
-    #ifdef HW_TEST
-    hw_conv_layer(HW_CTRL_ADDR, dma_input, 0,
-                  sizeof(float)*(b*num_inputs+num_biases + num_weights),
-                  b, od, ox, oy, id, ix, iy, s, k);
-    #else
-    layerType type = CONVLayer;
-    accelerator(
-                dma_input,
-                sizeof(float)*(num_biases + num_weights),
-                sizeof(float)*(b*num_inputs+num_biases + num_weights),
-                0,
-                b,
-                true,
-
-                type,
-
-                od,
-                ox,
-                oy,
-                id,
-                ix,
-                iy,s,
-                k,
-                0    //only for the first layer, because the input is already padded.
-                );
+    #ifdef PRINT
+        cout << "Begin Test\n"
+           << "Batch Size: " << b << endl
+           << "Num Inputs: " << num_inputs << endl
+           << "Num Outputs: " << num_outputs << endl
+           << "Num Weights: " << num_weights << endl
+           << "Num Biases: " << num_biases << endl
+           << "Input Dimensions " << b << " x " << id << " x " << ix << " x " << iy << endl
+           << "Output Dimensions " << b << " x " << od << " x " << ox << " x " << oy << endl
+           << "Kernel Dimensions " << od << " x " << id << " x " << k << " x " << k << endl
+           << "Stride Size: " << s << endl;
     #endif
 
-  }
+        layerType type = CONVLayer;
+        // Run Accelerator
+        if (runOnFPGA)
+        {
+             hw_accelerator(HW_CTRL_ADDR,
+                           dma_input,
+                           sizeof(float)*(num_biases + num_weights),
+                           sizeof(float)*(b*num_inputs+num_biases + num_weights),
+                           0,
+                           b,
+                           true,
 
+                           type,
+
+                           od,
+                           ox,
+                           oy,
+                           id,
+                           ix,
+                           iy,s,
+                           k,
+                           0    //only for the first layer, because the input is already padded.
+                           );
+        }
+        else
+        {
+
+            accelerator(
+                    dma_input,
+                    sizeof(float)*(num_biases + num_weights),
+                    sizeof(float)*(b*num_inputs+num_biases + num_weights),
+                    0,
+                    b,
+                    true,
+
+                    type,
+
+                    od,
+                    ox,
+                    oy,
+                    id,
+                    ix,
+                    iy,s,
+                    k,
+                    0    //only for the first layer, because the input is already padded.
+                    );
+      }
+    }
   return 0;
 
 }
 
 
-int main()
+int main(int argc, char *argv[])
 {
+
+    bool runOnFPGA;
+  switch(* (argv[1]))
+  {
+    case ('7'):
+      std::cout <<"Running on FPGA!!!!!!"<<std::endl;
+      runOnFPGA = true;
+      break;
+     default:
+      std::cout <<"Running on CPU"<<std::endl;
+      runOnFPGA = false;
+  }
 
   string imageRootDir = "data/vgg_batches/batch_";
   int numBatches = 1;
@@ -140,7 +171,7 @@ int main()
 #endif
     imageDir = imageRootDir + ss.str() + "/" + layer;
 
-    if(run_single_test(imageDir, batch_layer_params[i], dma_input_vec[i], gold_outputs_vec[i])!=0)
+    if(run_single_test(imageDir, batch_layer_params[i], dma_input_vec[i], gold_outputs_vec[i], runOnFPGA)!=0)
     return 1;
   }
   auto end = chrono::system_clock::now();

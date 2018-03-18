@@ -93,6 +93,7 @@ void accelerator (
     }
 }
 
+
 void util_computeKernel(
         t_conv (&partialOutputBuffer)[NUM_PARALLEL_K],
         const t_conv (&computeCache) [NUM_PARALLEL_K][NUM_PARALLEL_ONE_KERNEL],

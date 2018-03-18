@@ -4,6 +4,7 @@
 #include "common/params.hpp"
 #include <iostream>
 #include <cstring>
+#include "common/xaccelerator_hw.h"
 
 enum layerType {CONVLayer, FCLayer, POOLLayer};
 
@@ -28,6 +29,28 @@ void accelerator (
         const unsigned int pad  //pad size (CONV, POOL)
 
         );
+
+void hw_accelerator(int target,             // control register target
+                   float * mem,            // global memory pointer
+
+                    unsigned int inputByteOffset,       // offset of inputs in BYTES
+                    unsigned int outputByteOffset,      // offset of outputs in BYTES
+                    unsigned int parametersByteOffset,  // offset of parameters in BYTES
+                    const unsigned int batchSize,            // batch size
+                    const bool useReLu, //whether to use ReLu (ALL)
+
+                    layerType type,
+
+                    const unsigned int k,           // output number of kernels (CONV, POOL), or number of outputs (FC)
+                    const unsigned int n,           // output width (CONV)
+                    const unsigned int m,           // output height (CONV)
+                    const unsigned int c,           // input number of channels  (CONV, POOL), or number of inputs (FC)
+                    const unsigned int w,           // input width (CONV, POOL)
+                    const unsigned int h,           // input height (CONV, POOL)
+                    const unsigned int stride,            // stride (CONV, POOL)
+                    const unsigned int kernelSize ,        // kernel size (CONV, POOL)
+                    const unsigned int pad  //pad size (CONV, POOL)
+                    );
 
 void util_computeKernel(
         t_conv (&partialOutputBuffer)[NUM_PARALLEL_K],
