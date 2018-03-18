@@ -312,11 +312,11 @@ float get_mean_squared_error_and_write_file(vector<float *> mem, vector <float *
       {
           totalNegativeGolden++;
       }
-      if (j < 1024)
-      {
-          std::cout <<"@ "<<j<<" Result, golden: "<<outputs[j]<<" "<<golden_output[i][j]<<std::endl;
-          //errorCount++;
-      }
+//      if (j < 1024)
+//      {
+//          std::cout <<"@ "<<j<<" Result, golden: "<<outputs[j]<<" "<<golden_output[i][j]<<std::endl;
+//          //errorCount++;
+//      }
     }
     ss.str("");
     ss << i;

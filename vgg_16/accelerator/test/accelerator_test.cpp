@@ -145,7 +145,7 @@ int main(int argc, char *argv[])
   }
 
   string imageRootDir = "data/vgg_batches/batch_";
-  int numBatches = 1;
+  int numBatches = 10;
   string layer = "conv1_1";
   string imageDir;
   ostringstream ss;
