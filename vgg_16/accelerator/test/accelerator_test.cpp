@@ -108,7 +108,7 @@ int run_single_test(string imageDir, map<string, int> layer_params, float * &dma
                     sizeof(float)*(num_biases + num_weights),
                     sizeof(float)*(b*num_inputs+num_biases + num_weights),
                     0,
-                    b,
+                    1,
                     true,
 
                     type,
@@ -145,8 +145,8 @@ int main(int argc, char *argv[])
   }
 
   string imageRootDir = "data/vgg_batches/batch_";
-  int numBatches = 10;
-  string layer = "conv1_1";
+  int numBatches = 1;
+  string layer = "conv1_2";
   string imageDir;
   ostringstream ss;
   float total_error = 0.0;

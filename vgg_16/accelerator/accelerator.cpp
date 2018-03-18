@@ -592,7 +592,6 @@ void convLayer_WrapperLoadWeightsAndInputs(
         const unsigned int weightKOffset //starting offset in K dimension
         )
 {
-#pragma HLS INLINE
     convLayer_LoadWeights(
                 (const float *)(mem+memoryWeightoffset),
                 bufferWeights,
@@ -682,7 +681,6 @@ void convLayer_ComputePartialSum (
         const unsigned int stride //Stride
         )
 {
-#pragma HLS INLINE
     t_conv bufferInputCompute [NUM_PARALLEL_ONE_KERNEL];
     t_conv bufferOutputCompute [NUM_PARALLEL_K];
 
