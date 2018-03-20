@@ -177,7 +177,7 @@
 
 % *** SPECIALIZED LIST PACKAGES ***
 %
-\usepackage{algorithmic}
+\usepackage{algorithmicx}
 % algorithmic.sty was written by Peter Williams and Rogerio Brito.
 % This package provides an algorithmic environment fo describing algorithms.
 % You can use the algorithmic environment in-text or within a figure
@@ -191,7 +191,7 @@
 % Also of interest may be the (relatively newer and more customizable)
 % algorithmicx.sty package by Szasz Janos:
 % http://www.ctan.org/pkg/algorithmicx
-
+\usepackage{algorithm}% http://ctan.org/pkg/algorithm
 
 
 
@@ -374,47 +374,89 @@ The abstract goes here. FILL ME IN!!!!
 \section{Introduction}
 % no \IEEEPARstart
 [Give an overall architecture overview in this section, and list the optimizaitons implemented] \cite{vgg}.
+\begin{figure*}[th]
+\(\text{for} \, (iterK=0; \, iterK<K; \, iterK+=K_{vec})\longrightarrow \text{\textbf{Loop K}} \\
+\{  \\
+\phantom{x} \quad \text{Load $K_{vec}$ biases for $M \times N \times K_{vec}$ partial sums from memory to on-chip buffer;} \\
+\phantom{x}	\quad \text{for} \, (iterC=0; \, iterC<C; \, iterC+=C_{vec}) \longrightarrow \text{\textbf{Loop C}}\\
+\phantom{x} \quad \{ \\
+\phantom{x} \quad \quad \text{Load $H \times W \times C_{vec}$ inputs from memory to on-chip buffer, perform zero-padding if necessary;} \\
+\phantom{x} \quad \quad \text{Load $K_{vec} \times (R \times S \times C_{vec})$ kernel weights from memory to on-chip compute registers;} \\
+\phantom{x} \quad \quad \text{for} \, (iterM=0; \, iterM<M; \, iterM++) \longrightarrow \text{\textbf{Loop M}} \\
+\phantom{x} \quad \quad  \{ \\
+\phantom{x} \quad \quad \quad \text{for} \, (iterN=0; \, iterN<N; \, iterN++) \longrightarrow \text{\textbf{Loop N}} \\
+\phantom{x} \quad \quad \quad \{ \\
+\phantom{x} \quad \quad \quad \quad \text{Load $H_{vec} \times W_{vec} \times C_{vec}$ inputs from on-chip buffer to compute registers;} \\
+\phantom{x} \quad \quad \quad \quad \text{Update $K_{vec}$ partial sums in parallel. Each update dot-multiplies $H_{vec} \times W_{vec} \times C_{vec}$ inputs with weights;} \\
+\phantom{x} \quad \quad \quad \} \\
+\phantom{x} \quad \quad  \} \\
+\phantom{x} \quad \} \\
+\}
+\)
+\caption{Computation flow for processing one image in the convolutional layer accelerator.}\label{fig:acceleratorComp}
+\end{figure*}
 
 \section{Implementation Details}
 [More details on the flow of data and the use of each component in the architecture]
-
+\begin{figure}[h]
+\( \text{void util\_computeKernel (} \\
+\text{t\_conv (\&partialOutputBuffer)[$K_{vec}$],} \\
+\text{t\_conv (\&computeCache)[$K_{vec}$][$H_{vec} \times W_{vec} \times C_{vec}$],} \\
+ \text{t\_conv (\&computeStream)[$H_{vec} \times W_{vec} \times C_{vec}$]  )} \\
+\{ \\
+\phantom{x} \text{COMPUTE\_FOR\_OUTPUT:} \\
+\phantom{x} \text{for (unsigned int $i=0$; $i<K_{vec}$; $i++$)} \\
+\phantom{x} \{ \\
+\phantom{x}\: \text{\#pragma HLS UNROLL} \\
+\phantom{x}\: \text{for (unsigned int $j=0$; $j<H_{vec} \times W_{vec} \times C_{vec}$; j++)} \\
+\phantom{x}\: \{ \\
+\phantom{x}\:\: \text{COMPUTE\_FOR\_DOT\_PRODUCT:} \\
+\phantom{x}\:\: \text{\#pragma HLS UNROLL} \\
+\phantom{x}\:\: \text{partialOutputBuffer)[$i$]} \\
+\phantom{x}\:\: \text{+=computeCache[$i$][$j$] $\times$ computeStream[$j$];} \\
+\phantom{x}\: \} \\
+\phantom{x} \} \\
+\}
+\)
+\caption{HLS Code for the computation engine.}
+\end{figure}
 
 \section{Results}
 [Resource utilization and run-time for 1 batch (batch 0, 10 image)]
 \begin{table*}[ht]
 \caption{Comparision of different systems' run time for forwarding 1 batch of 10 images through each convolutional layer of the VGG-16 network.}
 \centering
-\begin{tabular}{| p{0.05\textwidth} | p{0.05\textwidth} | p{0.05\textwidth} | p{0.05\textwidth} | p{0.05\textwidth} | p{0.05\textwidth} | p{0.05\textwidth} | p{0.05\textwidth} | p{0.05\textwidth} | p{0.05\textwidth} | p{0.05\textwidth} | p{0.05\textwidth} |}
+\begin{tabular}{| p{0.05\textwidth} | p{0.05\textwidth} | p{0.05\textwidth} | p{0.05\textwidth} | p{0.05\textwidth} | p{0.05\textwidth} | p{0.05\textwidth} | p{0.05\textwidth} | p{0.05\textwidth} | p{0.05\textwidth} | p{0.05\textwidth} | p{0.05\textwidth} | p{0.08\textwidth} | }
 \hline
-Layer & \multicolumn{2}{|p{0.10\textwidth}|}{CPU} & \multicolumn{3}{|p{0.151\textwidth}|}{Array partition and parallel} & \multicolumn{3}{|p{0.15\textwidth}|}{Parallel without partition} & \multicolumn{3}{|p{0.15\textwidth}|}{Ping-pong} \\
-\cline{2-12}
-	&	Time per batch (s)	& RMS  & Time per batch (s)	& RMS & Speedup & Time per batch (s)	& RMS & Speedup & Time per batch (s)	& RMS & Speedup \\
+Layer & \multicolumn{2}{|p{0.10\textwidth}|}{CPU} & \multicolumn{3}{|p{0.151\textwidth}|}{Array partition and parallel} & \multicolumn{3}{|p{0.15\textwidth}|}{Parallel without partition} & \multicolumn{3}{|p{0.15\textwidth}|}{Ping-pong} & Array partition and parallel, Dummy \\
+\cline{2-13}
+	&	Time per batch (s)	& RMS  & Time per batch (s)	& RMS & Speedup & Time per batch (s)	& RMS & Speedup & Time per batch (s)	& RMS & Speedup & Time per batch (s)\\
 \hline 
-conv1\_1 & 6.4 & $\expnumber{1.8}{-11}$ & 6.2 & $\expnumber{4.8}{-11}$ & 1.03  & 12.2 & $\expnumber{4.8}{-11}$ & 1.03 & 6.34 & $\expnumber{4.8}{-11}$ & 1.01 \\
+conv1\_1 & 6.4 & $\expnumber{1.8}{-11}$ & 6.2 & $\expnumber{4.8}{-11}$ & 1.03  & 12.2 & $\expnumber{4.8}{-11}$ & 1.03 & 6.34 & $\expnumber{4.8}{-11}$ & 1.01 & 5.21 \\
 \hline
-conv1\_2 & 114.2 & $\expnumber{2.7}{-9}$ & 35.3 & $\expnumber{1.8}{-9}$ & 3.23  & 144.4 & $\expnumber{1.8}{-9}$ & 0.79 & 57.3 & $\expnumber{1.8}{-9}$ & 1.99 \\
+conv1\_2 & 114.2 & $\expnumber{2.7}{-9}$ & 35.3 & $\expnumber{1.8}{-9}$ & 3.23  & 144.4 & $\expnumber{1.8}{-9}$ & 0.79 & 57.3 & $\expnumber{1.8}{-9}$ & 1.99 & 8.34\\
 \hline
-conv2\_1 & 57.6 & $\expnumber{8.6}{-9}$ & 18.19 & $\expnumber{5.2}{-9}$ & 3.17  & 73.2 & $\expnumber{5.2}{-9}$ & 0.79 & 29.20 & $\expnumber{5.2}{-9}$ & 1.97 \\
+conv2\_1 & 57.6 & $\expnumber{8.6}{-9}$ & 18.19 & $\expnumber{5.2}{-9}$ & 3.17  & 73.2 & $\expnumber{5.2}{-9}$ & 0.79 & 29.20 & $\expnumber{5.2}{-9}$ & 1.97 & 4.18\\
 \hline
-conv2\_2 & 114.2 & $\expnumber{3.5}{-8}$ & 34.20 & $\expnumber{2.2}{-8}$ & 3.34  & 143.22 & $\expnumber{2.2}{-8}$ & 0.80 & 56.22 & $\expnumber{2.17}{-8}$ & 2.03 \\
+conv2\_2 & 114.2 & $\expnumber{3.5}{-8}$ & 34.20 & $\expnumber{2.2}{-8}$ & 3.34  & 143.22 & $\expnumber{2.2}{-8}$ & 0.80 & 56.22 & $\expnumber{2.17}{-8}$ & 2.03 & 6.22\\
 \hline
-conv3\_1 & 56.57 & $\expnumber{4.7}{-8}$ & 18.11 & $\expnumber{3.4}{-8}$ & 3.12  & 73.12 & $\expnumber{3.4}{-8}$ & 0.77 & 29.12 & $\expnumber{3.4}{-8}$ & 1.94 \\
+conv3\_1 & 56.57 & $\expnumber{4.7}{-8}$ & 18.11 & $\expnumber{3.4}{-8}$ & 3.12  & 73.12 & $\expnumber{3.4}{-8}$ & 0.77 & 29.12 & $\expnumber{3.4}{-8}$ & 1.94 & 3.12\\
 \hline
-conv3\_2 & 112.1 & $\expnumber{7.4}{-8}$ & 35.14 & $\expnumber{5.6}{-8}$ & 3.19  & 144.15 & $\expnumber{5.6}{-8}$ & 0.77 & 57.12 & $\expnumber{5.6}{-8}$ & 1.96 \\
+conv3\_2 & 112.1 & $\expnumber{7.4}{-8}$ & 35.14 & $\expnumber{5.6}{-8}$ & 3.19  & 144.15 & $\expnumber{5.6}{-8}$ & 0.77 & 57.12 & $\expnumber{5.6}{-8}$ & 1.96 & 4.14\\
 \hline
-conv3\_3 & 112.9 & $\expnumber{6.1}{-8}$ & 35.1 & $\expnumber{4.7}{-8}$ & 3.21  & 144.2 & $\expnumber{4.7}{-8}$ & 0.78 & 57.14 & $\expnumber{4.72}{-8}$ & 1.98 \\
+conv3\_3 & 112.9 & $\expnumber{6.1}{-8}$ & 35.1 & $\expnumber{4.7}{-8}$ & 3.21  & 144.2 & $\expnumber{4.7}{-8}$ & 0.78 & 57.14 & $\expnumber{4.72}{-8}$ & 1.98 & 4.14\\
 \hline
-conv4\_1 & 56.4 & $\expnumber{3.6}{-8}$ & 19.12 & $\expnumber{2.89}{-8}$ & 2.95  & 74.17 & $\expnumber{2.9}{-8}$ & 0.76 & 32.1 & $\expnumber{2.9}{-8}$ & 1.76 \\
+conv4\_1 & 56.4 & $\expnumber{3.6}{-8}$ & 19.12 & $\expnumber{2.89}{-8}$ & 2.95  & 74.17 & $\expnumber{2.9}{-8}$ & 0.76 & 32.1 & $\expnumber{2.9}{-8}$ & 1.76 & 3.12\\
 \hline
-conv4\_2 & 113.1 & $\expnumber{2.0}{-8}$ & 37.2 & $\expnumber{1.2}{-8}$ & 3.04  & 146.2 & $\expnumber{1.3}{-8}$ & 0.77 & 62.15 & $\expnumber{1.3}{-8}$ & 1.82 \\
+conv4\_2 & 113.1 & $\expnumber{2.0}{-8}$ & 37.2 & $\expnumber{1.2}{-8}$ & 3.04  & 146.2 & $\expnumber{1.3}{-8}$ & 0.77 & 62.15 & $\expnumber{1.3}{-8}$ & 1.82 & 4.14\\
 \hline
-conv4\_3 & 113.4 & $\expnumber{3.3}{-9}$ & 37.1 & $\expnumber{2.1}{-9}$ & 3.05  & 146.2 & $\expnumber{2.1}{-9}$ & 0.78 & 62.1 & $\expnumber{2.1}{-9}$ & 1.82 \\
+conv4\_3 & 113.4 & $\expnumber{3.3}{-9}$ & 37.1 & $\expnumber{2.1}{-9}$ & 3.05  & 146.2 & $\expnumber{2.1}{-9}$ & 0.78 & 62.1 & $\expnumber{2.1}{-9}$ & 1.82 & 4.15\\
 \hline
-conv5\_1 & 28.8 & $\expnumber{1.7}{-9}$ & 12.1 & $\expnumber{1.2}{-9}$ & 2.39  & 39.1 & $\expnumber{1.2}{-9}$ & 0.74 & 18.07 & $\expnumber{1.2}{-9}$ & 1.59 \\
+conv5\_1 & 28.8 & $\expnumber{1.7}{-9}$ & 12.1 & $\expnumber{1.2}{-9}$ & 2.39  & 39.1 & $\expnumber{1.2}{-9}$ & 0.74 & 18.07 & $\expnumber{1.2}{-9}$ & 1.59 & 2.07\\
 \hline
-conv5\_2 & 29.8 & $\expnumber{3.7}{-10}$ & 12.1 & $\expnumber{2.6}{-10}$ & 2.5  & 39.1 & $\expnumber{2.6}{-10}$ & 0.76 & 18.1 & $\expnumber{2.6}{-10}$ & 1.65 \\
+conv5\_2 & 29.8 & $\expnumber{3.7}{-10}$ & 12.1 & $\expnumber{2.6}{-10}$ & 2.5  & 39.1 & $\expnumber{2.6}{-10}$ & 0.76 & 18.1 & $\expnumber{2.6}{-10}$ & 1.65 & 2.07\\
 \hline
-conv5\_3 & 28.8 & $\expnumber{3.7}{-11}$ & 12.07 & $\expnumber{2.6}{-11}$ & 2.4  & 39.1 & $\expnumber{2.6}{-11}$ & 0.74 & 18.1 & $\expnumber{2.6}{-11}$ & 1.60 \\
+conv5\_3 & 28.8 & $\expnumber{3.7}{-11}$ & 12.07 & $\expnumber{2.6}{-11}$ & 2.4  & 39.1 & $\expnumber{2.6}{-11}$ & 0.74 & 18.1 & $\expnumber{2.6}{-11}$ & 1.60 & 2.07\\
 \hline
 \end{tabular}
 \end{table*}
