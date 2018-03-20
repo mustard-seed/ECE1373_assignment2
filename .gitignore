@@ -29,3 +29,19 @@ data/
 #CMakeLists
 *.user
 build-vgg_16-Desktop-Debug/
+
+## Core latex/pdflatex auxiliary files:
+*.aux
+*.lof
+*.log
+*.lot
+*.fls
+*.out
+*.toc
+*.fmt
+*.fot
+*.cb
+*.cb2
+*.lb
+*.gz
+*.dvi
