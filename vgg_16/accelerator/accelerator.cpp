@@ -1,5 +1,6 @@
 #include "accelerator/accelerator.hpp"
 
+//#define PRINT
 
 void accelerator (
         float * mem, //global memory pointer
@@ -49,14 +50,16 @@ void accelerator (
 
     //bufferBroadcast. Stores inputs during CONV and POOL operation. Store weights during FC operation
     //t_conv bufferBroadcast[NUM_TILE_BROADCAST][NUM_DEPTH_BROADCAST];
-    t_conv bufferBroadcast[NUM_INPUT_Z][NUM_INPUT_Y][NUM_INPUT_X];
+
+   // t_conv bufferBroadcastB[NUM_INPUT_Z][NUM_INPUT_Y][NUM_INPUT_X];
 
     //bufferOutput
     t_conv bufferOutput[NUM_OUTPUT_Z][NUM_OUTPUT_Y][NUM_OUTPUT_X];
  //Array of on-chip buffer storing partial sums
 
     //bufferCache. Stores weights during CONV and POOL operations. Stores inputs during FC operations
-    t_conv bufferCache[NUM_PARALLEL_K][NUM_PARALLEL_ONE_KERNEL];
+   // t_conv bufferCacheA[NUM_PARALLEL_K][NUM_PARALLEL_ONE_KERNEL];
+   // t_conv bufferCacheB[NUM_PARALLEL_K][NUM_PARALLEL_ONE_KERNEL];
  //weight buffer
 
     //t_conv (*p_bufferBroadcast)[NUM_DEPTH_BROADCAST] = bufferBroadcast;
@@ -68,9 +71,11 @@ void accelerator (
                         inputByteOffset,
                         outputByteOffset,
                         parametersByteOffset,
-						bufferBroadcast,
+						//bufferBroadcastA,
+						//bufferBroadcastB,
                         bufferOutput,
-                        bufferCache,
+                       // bufferCacheA,
+						//bufferCacheB,
                         batchSize,
                         k,
                         n,
@@ -118,9 +123,11 @@ void convLayer_Forward(float * mem,            // global memory pointer
                 const unsigned int inputByteOffset,       // offset of inputs in BYTES
                 const unsigned int outputByteOffset,      // offset of outputs in BYTES
                 const unsigned int parametersByteOffset,  // offset of parameters in BYTES
-                t_conv (&bufferBroadcast)[NUM_INPUT_Z][NUM_INPUT_Y][NUM_INPUT_X], //Array of on-chip buffer storing inputs
+                //t_conv (&bufferBroadcastA)[NUM_INPUT_Z][NUM_INPUT_Y][NUM_INPUT_X], //Array of on-chip buffer storing inputs
+				//t_conv (&bufferBroadcastB)[NUM_INPUT_Z][NUM_INPUT_Y][NUM_INPUT_X], //Array of on-chip buffer storing inputs
                 t_conv (&bufferOutput) [NUM_OUTPUT_Z][NUM_OUTPUT_Y][NUM_OUTPUT_X], //Array of on-chip buffer storing partial sums
-                t_conv (&bufferWeights)[NUM_PARALLEL_K][NUM_PARALLEL_ONE_KERNEL], //weight buffer
+                //t_conv (&bufferWeightsA)[NUM_PARALLEL_K][NUM_PARALLEL_ONE_KERNEL], //weight buffer
+				//t_conv (&bufferWeightsB)[NUM_PARALLEL_K][NUM_PARALLEL_ONE_KERNEL], //weight buffer
                 const unsigned int batchSize,            // batch size
                 const unsigned int k,           // output number of kernels
                 const unsigned int n,           // output width
@@ -149,7 +156,9 @@ void convLayer_Forward(float * mem,            // global memory pointer
          iterBatch++,  inputPartialIndexIterBatch+=inputOffsetIterBatchConstant , outputPartialIndexBatch += outputOffsetIterBatchConstant)
     {
 #ifndef __SYNTHESIS__
+#ifdef PRINT
         std::cout <<"Working on batch index "<<iterBatch<<std::endl;
+#endif
 #endif
         CONVLAYER_FORWARD_FOR_K:
         for (unsigned int iterK = 0;
@@ -157,7 +166,9 @@ void convLayer_Forward(float * mem,            // global memory pointer
              iterK += NUM_PARALLEL_K)
         {
 #ifndef __SYNTHESIS__
+#ifdef PRINT
             std::cout <<"Working on kernel "<<iterK<<std::endl;
+#endif
 #endif
            convLayer_PrepareOutputBuffer(
                         pointerBias,
@@ -167,41 +178,26 @@ void convLayer_Forward(float * mem,            // global memory pointer
                         n,
                         iterK
                         );
-           CONVLAYER_FORWARD_FOR_C:
-            for (unsigned int iterC=0; iterC < c; iterC+=NUM_PARALLEL_C)
-            {
-                convLayer_WrapperLoadWeightsAndInputs(
-                            mem,
-                            offsetWeight,
-                            inputByteOffset/SIZE_OF_FLOAT + inputPartialIndexIterBatch,
-                            bufferBroadcast,
-                            bufferWeights,
-                            c,
-                            w,
-                            h,
-                            iterC,
-                            pad,
-                            kernelSize,
-                            kernelSize,
-                            k,
-                            iterK
-                            );
+           convLayer_ComputeWrapper(
+        		   mem,
+        	inputByteOffset,
+			inputPartialIndexIterBatch,
+			//bufferBroadcastA,
+			bufferOutput,
+			//bufferWeightsA,
+			iterK,
+			offsetWeight,
+			k,
+			n,
+			m,
+			c,
+			w,
+			h,
+			stride,
+			kernelSize,
+			pad
+           );
 
-               convLayer_ComputePartialSum(
-                            bufferBroadcast,
-                            bufferWeights,
-                            bufferOutput,
-                            m,
-                            n,
-                            kernelSize,
-                            kernelSize,
-                            c,
-                            k,
-                            iterC,
-                            iterK,
-                            stride
-                            );
-            }
 
             convLayer_OffloadOutputBuffer(
                         (float *)(mem + outputByteOffset/SIZE_OF_FLOAT + outputPartialIndexBatch),
@@ -420,8 +416,8 @@ void convLayer_OffloadOutputBuffer (
     unsigned int memCounter = 0;
 
     //Need to take into account of going out of bounds
-    unsigned int actualOutputKMax = outputKOffset + NUM_TILE_OUTPUT_CONV_Z < outputKMax ?
-                outputKOffset + NUM_TILE_OUTPUT_CONV_Z : outputKMax;
+    unsigned int actualOutputKMax = outputKOffset + NUM_PARALLEL_K < outputKMax ?
+                outputKOffset + NUM_PARALLEL_K : outputKMax;
 
     CONVLAYER_OFFLOADRESULT_FOR_K:
     for (unsigned int iterOutputK = outputKOffset, iterOutputKMinor = 0;
@@ -553,11 +549,14 @@ void convLayer_LoadWeights (
                             PORT_WIDTH_BYTE);
 
                     convLayer_LoadWeights_label1:
-					for (unsigned int iter=0; iter<packetLength; iter++)
+					for (unsigned int iter=0; iter<NUM_PARALLEL_X; iter++)
                     {
+						assert(iterBufferK < NUM_PARALLEL_K);
+					    assert(iter+partialIndexBufferS+partialIndexBufferR+partialIndexBufferC < NUM_PARALLEL_ONE_KERNEL);
                         if (iter+partialIndexBufferS < weightSMax && iterBufferR < weightRMax && iterBufferC+weightCOffset < weightCMax
                                 && iterBufferK+weightKOffset < weightKMax)
                         {
+
                             bufferWeights[iterBufferK][iter+partialIndexBufferS+partialIndexBufferR+partialIndexBufferC]
                                     = (t_conv)bufferDDR[iter];
                         }
@@ -791,3 +790,69 @@ void convLayer_ComputePartialSum (
         }
     }
 }
+
+void convLayer_ComputeWrapper(float * mem,            // global memory pointer
+                const unsigned int inputByteOffset,       // offset of inputs in BYTES
+                const unsigned int inputPartialIndexIterBatch,      // offset of input due to batches in INDEX
+               // t_conv (&bufferBroadcastA)[NUM_INPUT_Z][NUM_INPUT_Y][NUM_INPUT_X], //Array of on-chip buffer storing inputs
+				//t_conv (&bufferBroadcastB)[NUM_INPUT_Z][NUM_INPUT_Y][NUM_INPUT_X], //Array of on-chip buffer storing inputs
+                t_conv (&bufferOutput) [NUM_OUTPUT_Z][NUM_OUTPUT_Y][NUM_OUTPUT_X], //Array of on-chip buffer storing partial sums
+               // t_conv (&bufferWeightsA)[NUM_PARALLEL_K][NUM_PARALLEL_ONE_KERNEL], //weight buffer
+				//t_conv (&bufferWeightsB)[NUM_PARALLEL_K][NUM_PARALLEL_ONE_KERNEL], //weight buffer
+				const unsigned int iterK,            // current C index
+				const unsigned int offsetWeight,
+                const unsigned int k,           // output number of kernels
+                const unsigned int n,           // output width
+                const unsigned int m,           // output height
+                const unsigned int c,           // input dimensions
+                const unsigned int w,           // input width
+                const unsigned int h,           // input height
+                const unsigned int stride,            // stride
+                const unsigned int kernelSize ,        // kernel size
+                const unsigned int pad //pad size
+                )
+{
+	 t_conv bufferBroadcastA[NUM_INPUT_Z][NUM_INPUT_Y][NUM_INPUT_X];
+
+	 //bufferCache. Stores weights during CONV and POOL operations. Stores inputs during FC operations
+	 t_conv bufferWeightsA[NUM_PARALLEL_K][NUM_PARALLEL_ONE_KERNEL];
+	 CONVLAYER_FORWARD_FOR_C:
+	for (unsigned int iterC=0; iterC < c; iterC+=NUM_PARALLEL_C)
+	            {
+
+						convLayer_WrapperLoadWeightsAndInputs(
+									mem,
+									offsetWeight,
+									inputByteOffset/SIZE_OF_FLOAT + inputPartialIndexIterBatch,
+									bufferBroadcastA,
+									bufferWeightsA,
+									c,
+									w,
+									h,
+									iterC,
+									pad,
+									kernelSize,
+									kernelSize,
+									k,
+									iterK
+									);
+
+					   convLayer_ComputePartialSum(
+									bufferBroadcastA,
+									bufferWeightsA,
+									bufferOutput,
+									m,
+									n,
+									kernelSize,
+									kernelSize,
+									c,
+									k,
+									iterC,
+									iterK,
+									stride
+									);
+
+	            }
+
+}
+

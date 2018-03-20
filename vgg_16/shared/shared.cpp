@@ -304,7 +304,7 @@ float get_mean_squared_error_and_write_file(vector<float *> mem, vector <float *
 
     }
     unsigned errorCount = 0;
-    for (int j = 0; j < 1*num_outputs; j++)
+    for (int j = 0; j < b*num_outputs; j++)
     {
       float err = fabs(outputs[j] - golden_output[i][j]);
       total += err*err;

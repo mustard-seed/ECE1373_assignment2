@@ -108,7 +108,7 @@ int run_single_test(string imageDir, map<string, int> layer_params, float * &dma
                     sizeof(float)*(num_biases + num_weights),
                     sizeof(float)*(b*num_inputs+num_biases + num_weights),
                     0,
-                    1,
+                    b,
                     true,
 
                     type,
@@ -133,6 +133,13 @@ int main(int argc, char *argv[])
 {
 
     bool runOnFPGA;
+
+  if (argc != 2)
+  {
+	  std::cout <<"Usage; hw_accelerator [option] "<<std::endl;
+	  std::cout <<"Option: 7 for running on FPGA. Other character for running on CPU."<<std::endl;
+	  return 0;
+  }
   switch(* (argv[1]))
   {
     case ('7'):
@@ -146,41 +153,49 @@ int main(int argc, char *argv[])
 
   string imageRootDir = "data/vgg_batches/batch_";
   int numBatches = 1;
-  string layer = "conv1_2";
-  string imageDir;
-  ostringstream ss;
-  float total_error = 0.0;
-  cout << "Reading Input for " << numBatches << " batches" <<  endl;
+  vector<string> vectorLayer = {"conv1_1", "conv1_2", "conv2_1", "conv2_2", "conv3_1", "conv3_2", "conv3_3", "conv4_1", "conv4_2", "conv4_3",
+  "conv5_1", "conv5_2", "conv5_3"};
 
-  vector<map<string, int> > batch_layer_params = readBatchParams(imageRootDir, numBatches, layer);
-  vector<float *> dma_input_vec;
-  vector<float *> gold_outputs_vec;
-  if(readInputBatches(imageRootDir, batch_layer_params, numBatches, layer, MAX_WEIGHT_SIZE+MAX_OUTPUT_DIMS+MAX_BATCH*MAX_CONV_INPUT+MAX_BATCH*MAX_CONV_OUTPUT, dma_input_vec, CONV))
-    return 1;
-  if(readOutputBatches(imageRootDir, batch_layer_params, numBatches, layer, MAX_BATCH*MAX_CONV_OUTPUT, gold_outputs_vec, CONV)) return 1;
+  for (auto layer : vectorLayer)
+  {
+	  std::cout <<"========================="<<std::endl;
+	  std::cout <<"Testing layer: "<<layer<<std::endl;
+	  //string layer = "conv3_3";
+	  string imageDir;
+	  ostringstream ss;
+	  float total_error = 0.0;
+	  cout << "Reading Input for " << numBatches << " batches" <<  endl;
+
+	  vector<map<string, int> > batch_layer_params = readBatchParams(imageRootDir, numBatches, layer);
+	  vector<float *> dma_input_vec;
+	  vector<float *> gold_outputs_vec;
+	  if(readInputBatches(imageRootDir, batch_layer_params, numBatches, layer, MAX_WEIGHT_SIZE+MAX_OUTPUT_DIMS+MAX_BATCH*MAX_CONV_INPUT+MAX_BATCH*MAX_CONV_OUTPUT, dma_input_vec, CONV))
+		return 1;
+	  if(readOutputBatches(imageRootDir, batch_layer_params, numBatches, layer, MAX_BATCH*MAX_CONV_OUTPUT, gold_outputs_vec, CONV)) return 1;
 
 
-  cout << "Starting Test with " << numBatches << " batches" <<  endl;
+	  cout << "Starting Test with " << numBatches << " batches" <<  endl;
 
 
-  auto start = chrono::system_clock::now();
-  for(int i=0; i<numBatches; i++){
-    ss << i;
-#ifdef PRINT
-    cout << "Running batch" << i << endl;
-#endif
-    imageDir = imageRootDir + ss.str() + "/" + layer;
+	  auto start = chrono::system_clock::now();
+	  for(int i=0; i<numBatches; i++){
+		ss << i;
+	#ifdef PRINT
+		cout << "Running batch" << i << endl;
+	#endif
+		imageDir = imageRootDir + ss.str() + "/" + layer;
 
-    if(run_single_test(imageDir, batch_layer_params[i], dma_input_vec[i], gold_outputs_vec[i], runOnFPGA)!=0)
-    return 1;
+		if(run_single_test(imageDir, batch_layer_params[i], dma_input_vec[i], gold_outputs_vec[i], runOnFPGA)!=0)
+		return 1;
+	  }
+	  auto end = chrono::system_clock::now();
+	  auto elapsed = end - start;
+
+	  float avg_error = get_mean_squared_error_and_write_file(dma_input_vec, gold_outputs_vec, numBatches, batch_layer_params, imageRootDir, layer, CONV);
+
+	  cout << "Mean Square Error " << avg_error << endl;
+	  cout << "Computation took  " << chrono::duration<double> (elapsed).count() << " seconds" << endl;
+	  std::cout << "DONE" << std::endl;
   }
-  auto end = chrono::system_clock::now();
-  auto elapsed = end - start;
-
-  float avg_error = get_mean_squared_error_and_write_file(dma_input_vec, gold_outputs_vec, numBatches, batch_layer_params, imageRootDir, layer, CONV);
-
-  cout << "Mean Square Error " << avg_error << endl;
-  cout << "Computation took  " << chrono::duration_cast<chrono::seconds> (elapsed).count() << " seconds" << endl;
-  std::cout << "DONE" << std::endl;
   return 0;
 }

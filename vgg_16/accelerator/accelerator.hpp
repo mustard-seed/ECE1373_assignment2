@@ -5,6 +5,7 @@
 #include <iostream>
 #include <cstring>
 #include "common/xaccelerator_hw.h"
+#include <cassert>
 
 enum layerType {CONVLayer, FCLayer, POOLLayer};
 
@@ -63,9 +64,11 @@ void convLayer_Forward(float * mem,            // global memory pointer
                 const unsigned int inputByteOffset,       // offset of inputs in BYTES
                 const unsigned int outputByteOffset,      // offset of outputs in BYTES
                 const unsigned int parametersByteOffset,  // offset of parameters in BYTES
-               t_conv (&bufferBroadcast)[NUM_INPUT_Z][NUM_INPUT_Y][NUM_INPUT_X], //Array of on-chip buffer storing inputs
-               t_conv (&bufferOutput) [NUM_OUTPUT_Z][NUM_OUTPUT_Y][NUM_OUTPUT_X], //Array of on-chip buffer storing partial sums
-               t_conv (&bufferWeights)[NUM_PARALLEL_K][NUM_PARALLEL_ONE_KERNEL], //weight buffer
+                //t_conv (&bufferBroadcastA)[NUM_INPUT_Z][NUM_INPUT_Y][NUM_INPUT_X], //Array of on-chip buffer storing inputs
+				//t_conv (&bufferBroadcastB)[NUM_INPUT_Z][NUM_INPUT_Y][NUM_INPUT_X], //Array of on-chip buffer storing inputs
+                t_conv (&bufferOutput) [NUM_OUTPUT_Z][NUM_OUTPUT_Y][NUM_OUTPUT_X], //Array of on-chip buffer storing partial sums
+                //t_conv (&bufferWeightsA)[NUM_PARALLEL_K][NUM_PARALLEL_ONE_KERNEL], //weight buffer
+				//t_conv (&bufferWeightsB)[NUM_PARALLEL_K][NUM_PARALLEL_ONE_KERNEL], //weight buffer
                 const unsigned int batchSize,            // batch size
                 const unsigned int k,           // output number of kernels
                 const unsigned int n,           // output width
@@ -163,4 +166,25 @@ void convLayer_ComputePartialSum (const t_conv (&bufferBroadcast)[NUM_INPUT_Z][N
         const unsigned int weightKOffset, //starting offset in K dimension
         const unsigned int stride //Stride
         );
+
+void convLayer_ComputeWrapper(float * mem,            // global memory pointer
+                const unsigned int inputByteOffset,       // offset of inputs in BYTES
+                const unsigned int inputPartialIndexIterBatch,      // offset of input due to batches in INDEX
+                //t_conv (&bufferBroadcastA)[NUM_INPUT_Z][NUM_INPUT_Y][NUM_INPUT_X], //Array of on-chip buffer storing inputs
+				//t_conv (&bufferBroadcastB)[NUM_INPUT_Z][NUM_INPUT_Y][NUM_INPUT_X], //Array of on-chip buffer storing inputs
+                t_conv (&bufferOutput) [NUM_OUTPUT_Z][NUM_OUTPUT_Y][NUM_OUTPUT_X], //Array of on-chip buffer storing partial sums
+               // t_conv (&bufferWeightsA)[NUM_PARALLEL_K][NUM_PARALLEL_ONE_KERNEL], //weight buffer
+				//t_conv (&bufferWeightsB)[NUM_PARALLEL_K][NUM_PARALLEL_ONE_KERNEL], //weight buffer
+                const unsigned int iterK,            // current C index
+				const unsigned int offsetWeight,
+                const unsigned int k,           // output number of kernels
+                const unsigned int n,           // output width
+                const unsigned int m,           // output height
+                const unsigned int c,           // input dimensions
+                const unsigned int w,           // input width
+                const unsigned int h,           // input height
+                const unsigned int stride,            // stride
+                const unsigned int kernelSize ,        // kernel size
+                const unsigned int pad  //pad size
+                );
 #endif // ACCELERATOR_HPP

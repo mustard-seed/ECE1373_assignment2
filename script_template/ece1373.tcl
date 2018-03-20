@@ -1,0 +1,3 @@
+source script_template/create_pr_accelerator.tcl
+source script_template/create_pr_acceleratorNoPartition.tcl
+source script_template/create_pr_acceleratorFlow.tcl
