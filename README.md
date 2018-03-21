@@ -1,122 +1,57 @@
 # ECE1373_assignment2
 
-Welcome to the second assignment in ECE1373
+Welcome to the submission for the second assignment in ECE1373
 
 This will describe how to run the provided sample code in this directory. 
-This description assumes you have read the assignment handout in doc/assignment2.pdf
 
 ## Code Organization
+-IMPORTANT!!!!! THE SOURCE CODES THAT CAME WITH THE ASSIGNMENT START UP FILES WERE NOT USED!
+-IMPORTANT!!!!! Instead of 8v3_shell/static_routed_v1.dcp, this submission uses 8v3_shell/static_routed_v2.dcp
 
 The source code is organized as follows:
-- fc directory has files for fully connected layer
-- conv directory has files for the convolution layer
+- vgg_16/accelerator directory has files for the implemented accelerator
+- vgg_16/common has files that define paramters and data types
+- vgg)16/shared contains files used during tests
 - nn_params stores binaries for the weights, biases, inputs and reference output. This also contains a script extractParams to create new binaries for other layers. 
-- util directory has the shared function to read input.
-- hls_proj contains tcl scripts to create a vivado_hls project for convolution and fc.
+- hls_proj contains tcl scripts to create a vivado_hls project for accelerator.
 - pci_tests includes tests to read and write to pcie.
-- 8v3_shell contains files and projects for the hypervisor and user appplications
+- 8v3_shell contains files and projects for the hypervisor and user appplications, as well as the bitstreams.
 
-To create a project with the sample unoptimized code and run csim and synth design do the following:
+## Where to find the bitstreams for the 3 implementations
+The 3 implementations are 
+1) Array Partition and Parallel
+- Implementation bit stream: 8v3_shell/accelerator_pr_pblock_pr_region_partial.bit
+- Clear bit stream: 8v3_shell/accelerator_pr_pblock_pr_region_partial_clear.bit
 
+2) Parallel without Array Partition
+- Implementation bit stream: 8v3_shell/acceleratorNoPartition_pr_pblock_pr_region_partial.bit
+- Clear bit stream: 8v3_shell/acceleratorNoPartition_pr_pblock_pr_region_partial_clear.bit
 
-## Pre-requisites
+3) Ping-pong
+- Implementation bit stream: 8v3_shell/acceleratorFlow_pr_pblock_pr_region_partial.bit
+- Clear bit stream: 8v3_shell/acceleratorFlow_pr_pblock_pr_region_partial_clear.bit
 
-1. Install vivado 2017.2 in /opt/  (Already done in the container)
-2. Install caffe in /opt/  (Already done in the container)
-3. ``source sourceme.sh`` 
-
-
-
-## FPGA Hypervisor 
-
-We use partial reconfiguration to program your applcation into an already programmed FPGA (we call this the Hypervisor)
-The Hypervisor contains the following:
-
-- A PCIe module that can address into 1 MB of control registers through AXI-Lite and 2 GB of off-chip memory
-- An off-chip memory controller interfacing with 8GB of off-chip memory (first 2 GB is shared with PCIe addressable space)
-- Partial region to be programmed with partial reconfiguration, contains an AXI-Lite Slave interface to receive control information from PCIe and contains an AXI-Master interface connecting to the off-chip memory controller.
-
-**NOTE: WE HAVE CREATED THE HYPERVISOR FOR YOU AND IT CAN BE FOUND IN http://www.eecg.toronto.edu/~tarafda1/hypervisors/adm-8v3/static_routed_v1.dcp.**
-**You do not need to download it. The Makefile handles the importing of the hypervisor and building of the application for you** 
-
-Do not create a new hypervisor as you will be sharing this FPGA with your colleagues who will be building with the same hypervisor
-The Makefile is modified to pull the DCP as needed. 
+4) Dummy (It is only used to get latencies due to memory access. It is not really an implementation, as it does not actually perform convolution)
+- Implementation bit stream: 8v3_shell/acceleratorDummy_pr_pblock_pr_region_partial.bit
+- Clear bit stream: 8v3_shell/acceleratorDummy_pr_pblock_pr_region_partial_clear.bit
 
 
-## Creating the Data
+## How to make and run tests
+A test executable has been generated that runs 1 batch of 10 images through all every convolutional layers in the VGG-16 network
+- How o make the exeutable: In the project folder's root, type 
+make hw_accelerator
+An executable named hw_accelerator should be created in the project root directory
 
-To create the data run the nn_params/extractParams_imagenet.py from the project root. You can specify additinal args (optionally)
+- How to run tests on CPU
+./hw_accelerator [any character]
 
-``python nn_params/extractParams_imagenet.py --total_batches <number of batches> --model <location of deploy.txt>  --weights <location of caffemodel (weights)> --mean_file <location of mean file> --image_root <location of where you would like to dump your batch data> --imagenet_val_path <location of imagenet database>``
-
-All of these are optional flags. The rest of the test applications assume the current locations of where the images are being dumped, so it is recommended that you do not input any flags to begin with.
-
-``python nn_params/extractParams_imagenet.py``
-
-
-## Running an Example
-
-We have provided an example with PCIe connecting to a convolution layer and an fc layer directly through PCIe. These modules are using only off-chip memory
-to communicate with the host. (is this the best way to do it?)
-We have verified functionality on both the conv and fc layer.
+- How to run tests on FPGA (Important: make sure you've programmed the FPGA first!)
+./hw_accelerator 7
 
 
-``make pr``  
-- This will create the vivado_hls projects in hls_proj,  and create a new application in a partial region using the hypervisor provided.
-           
+## How to re-generate the 3 implmentations' bit streams (Do this only when absolutely necessary and abudant time is available)
+make accelerator_createHW
 
-You will then need to program the FPGA. To program the FPGA run the following:
-``/opt/util/prog_util/program.sh 8v3_shell/pr_region_test_proj_pblock_pr_region_partial.bit 8v3_shell/pr_region_test_proj_pblock_pr_region_partial_clear.bit``
+## How to re-generate the dummy implementation's bit stream
+make acceleratorDummy_createHW
 
-Where the first argument is the partial bitstream and the second argument is the clear bitstream. 
-
-You can look at the generated slave_axi registers to see which offsets you need to program the control registers.
-For example for the fc look at ./hls_proj/fc_proj/solution1/impl/verilog/fc_layer_CTRL_BUS_s_axi.v
-
-Look at the Makefile to see the tests. To build for example a sample conv_layer in hardware it is. 
-make 
-``./hw_conv_layer``
-
-This writes control registers, copies data into the off-chip memory, starts the application and reads data out. 
-
-
-## Creating Your Own Application
-
-Run the following:
-``make pr_modify``
-
-This does the same thing as the first half of our ``make pr``. This imports the hypervisor dcp, and makes the example we provided. This then opens the block diagram in the GUI. You can modify the block diagram to import your own IPs. Remember to also modify your addresses for your interconnect in Address Editor.
-Afterwards you will run the following in the tcl console within vivado:
-
-``source 8v3_shell/create_pr2_1.tcl`` 
-
-This will create the wrapper, and synthesize the bitstream. The bitstream generated will be in ./8v3_shell/pr_region_test_pblock_partial.bit. 
-
-
-
-## Programming The FPGA
-
-To program the FPGA you will need to use the program script provided in /opt/util/progutil/program.sh
-
-You will give it two arguments, the first being your partial bitstream and the second being the clear bitstream. You will see both in the 8v3_shell directory.
-It is important you give both bitstreams and you use this script to program the partial regions or there is a chance the FPGA gets stuck in a bad state.
-
-Programming template:
-``/opt/util/prog_util/program.sh <partial.bit file> <partial_clear.bit file>``
-
-
-## Verifying Accuracy
-
-The above test creates a file in the data directory for each batch layer called dma_out. 
-The nn_params/softMax.py script pumps the data out of the last fully connected layer  through a softmax and compares the results with the label information.
-This will give you an accuracy result of your network. 
-
-To verify accuracy you can run the following:
-
-``python nn_params/softMax.py --total_batches <number of batches> --model <location of deploy.txt>  --weights <location of caffemodel (weights)> --image_root_path <location of where you would like to dump your batch data> --last_fc <the name of the fully connected layer before the softmax> --softmax <name of the softmax layer>``
-
-Like the above python script in generating data, the default parameters are what you would be using for this assignment so:
-
-``python nn_params/softMax.py``
-
-Will suffice
