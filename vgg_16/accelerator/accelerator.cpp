@@ -106,6 +106,7 @@ void util_computeKernel(
 )
 {
 
+#ifndef DUMMY
 	COMPUTE_FOR_OUTPUT:
 	for (unsigned int iterOutput=0; iterOutput<NUM_PARALLEL_K; iterOutput++)
     {
@@ -117,6 +118,7 @@ void util_computeKernel(
                     *computeStream[iterDotProduct];
         }
     }
+#endif
 }
 
 void convLayer_Forward(float * mem,            // global memory pointer

@@ -3,6 +3,7 @@
 ## Please DO NOT edit it.
 ## Copyright (C) 1986-2017 Xilinx, Inc. All Rights Reserved.
 ############################################################
+cd hls_proj
 open_project accelerator
 set_top accelerator
 add_files ../vgg_16/accelerator/accelerator.cpp -cflags "-I../vgg_16 -DHW_ONLY -std=c++0x"

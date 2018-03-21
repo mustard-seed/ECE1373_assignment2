@@ -59,8 +59,14 @@ hw_accelerator: vgg_16/accelerator/* vgg_16/accelerator/test/* vgg_16/common/* v
 accelerator_hls: vgg_16/accelerator/* vgg_16/accelerator/test/* vgg_16/common/* vgg_16/shared/*
 	vivado_hls hls_proj/accelerator_hls.tcl
 
+acceleratorDummy_hls: vgg_16/accelerator/* vgg_16/accelerator/test/* vgg_16/common/* vgg_16/shared/*
+	vivado_hls hls_proj/acceleratorDummy_hls.tcl
+
 accelerator_createHW: accelerator_hls
 	vivado -mode gui -source script_template/create_pr_accelerator.tcl
 	vivado -mode gui -source script_template/create_pr_acceleratorNoPartition.tcl
 	vivado -mode gui -source script_template/create_pr_acceleratorFlow.tcl
+
+acceleratorDummy_createHW: acceleratorDummy_hls
+	vivado -mode gui -source script_template/create_pr_acceleratorDummy.tcl
 
