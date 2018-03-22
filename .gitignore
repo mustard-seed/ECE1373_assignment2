@@ -13,6 +13,8 @@ vivado_*
 !8v3_shell/acceleratorNoPartition_pr_pblock_pr_region_partial_clear.bit
 !8v3_shell/accelerator_pr_pblock_pr_region_partial.bit
 !8v3_shell/accelerator_pr_pblock_pr_region_partial_clear.bit
+!8v3_shell/acceleratorDummy_pr_pblock_pr_region_partial.bit
+!8v3_shell/acceleratorDummy_pr_pblock_pr_region_partial_clear.bit
 hw_accelerator
 *_proj/*
 !hls_proj/*.tcl
